@@ -5,7 +5,19 @@
   ],
   "references": [
     {
-      "path": "exercises/01.start/01.problem.start"
+      "path": "exercises/01.sampling/01.problem.simple"
+    },
+    {
+      "path": "exercises/01.sampling/01.solution.simple"
+    },
+    {
+      "path": "exercises/01.sampling/02.problem.advanced"
+    },
+    {
+      "path": "exercises/01.sampling/02.solution.advanced"
+    },
+    {
+      "path": "exercises/99.finished/01.solution.finished"
     }
   ]
 }

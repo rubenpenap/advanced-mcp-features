@@ -1,0 +1,111 @@
+# Sampling
+
+Modern AI applications often need to generate new content (whether that's text,
+images, or more) on demand. This process is called **sampling**: asking a
+language model (or other generative model) to produce a completion or response
+based on a prompt and some context.
+
+This one is a tricky one to understand. Think of it like you're "borrowing" the
+user's LLM to generate content for them.
+[Read about this idea here](https://www.epicai.pro/how-to-use-sampling-in-mcp-borrow-the-users-llm-o7nk3).
+
+It may be helpful for you to watch a demo of this working:
+
+<EpicVideo url="https://www.epicai.pro/using-mcp-sampling-in-vs-code-insiders-dd12d" />
+
+<callout-success>
+	From [the MCP
+	Spec](https://modelcontextprotocol.io/specification/2025-06-18/client/sampling):
+	Sampling in MCP allows servers to implement agentic behaviors, by enabling LLM
+	calls to occur _nested_ inside other MCP server features. Implementations are
+	free to expose sampling through any interface pattern that suits their
+	needs—the protocol itself does not mandate any specific user interaction
+	model.
+</callout-success>
+
+Here's a sequence diagram for this:
+
+```mermaid
+sequenceDiagram
+	participant User
+	participant App
+	participant LLM
+	participant Client
+	participant Server
+	Server->>Client: Create sampling request (system prompt, messages)
+	Client->>App: Request permission for sampling
+	App->>User: Request permission for sampling
+	alt User approves
+		App->>LLM: Forward sampling request
+		LLM-->>App: Generation (completion)
+		App-->>Client: Sampling result
+		Client-->>Server: Sampling result
+	else User rejects
+		App->>Client: Permission denied
+		Client-->>Server: Sampling rejected
+	end
+```
+
+Here's a simple example of a sampling request and response using MCP:
+
+```json
+// Request
+{
+	"jsonrpc": "2.0",
+	"id": 1,
+	"method": "sampling/createMessage",
+	"params": {
+		"messages": [
+			{
+				"role": "user",
+				"content": {
+					"type": "text",
+					"text": "Hello, world!"
+				}
+			}
+		],
+		"systemPrompt": "You are a helpful assistant.",
+		"maxTokens": 20
+	}
+}
+```
+
+```json
+// Response
+{
+	"jsonrpc": "2.0",
+	"id": 1,
+	"result": {
+		"role": "assistant",
+		"content": {
+			"type": "text",
+			"text": "Hello! How can I help you today?"
+		},
+		"model": "claude-3-sonnet-20240307",
+		"stopReason": "endTurn"
+	}
+}
+```
+
+MCP standardizes how servers and clients can request these generations. Instead
+of requiring every server to manage its own API keys and model integrations, MCP
+lets servers request completions through a client, which handles model
+selection, permissions, and user controls. This approach enables powerful
+agentic behaviors—like having an LLM suggest tags for a journal entry, or
+generate a summary for a document—while keeping the user in control (and it lets
+you take advantage of the model for which
+[your user is already paying](https://www.epicai.pro/the-cost-effective-promise-of-model-context-protocol-mcp-jnwt3)).
+
+In this exercise, you'll extend your MCP server to leverage the sampling
+capability. You'll see how to:
+
+- Request a model completion from the client, including setting a system prompt,
+  user messages, and token limits.
+- Parse and validate the model's response.
+- Use sampling to automate tasks in your application, such as suggesting tags
+  for new journal entries.
+
+You'll also explore how to craft effective prompts for the model, and how to
+structure your requests and responses for reliability and safety.
+
+- 📜 [MCP Sampling Spec](https://modelcontextprotocol.io/specification/2025-06-18/client/sampling)
