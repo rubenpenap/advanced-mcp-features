@@ -1,3 +1,6 @@
+import { spawn } from 'node:child_process'
+import * as fs from 'node:fs/promises'
+import { userInfo } from 'node:os'
 import { invariant } from '@epic-web/invariant'
 import { type CallToolResult } from '@modelcontextprotocol/sdk/types.js'
 import { z } from 'zod'
@@ -367,6 +370,67 @@ export async function initializeTools(agent: EpicMeMCP) {
 			}
 		},
 	)
+
+	agent.server.registerTool(
+		'create_wrapped_video',
+		{
+			title: 'Create Wrapped Video',
+			description:
+				'Create a "wrapped" video highlighting stats of your journaling this year',
+			annotations: {
+				destructiveHint: false,
+				openWorldHint: false,
+			},
+			inputSchema: {
+				year: z
+					.number()
+					.default(new Date().getFullYear())
+					.describe(
+						'The year to create a wrapped video for (defaults to current year)',
+					),
+			},
+			outputSchema: { videoUri: z.string().describe('The URI of the video') },
+		},
+		async (
+			{ year = new Date().getFullYear() },
+			{ sendNotification, _meta },
+		) => {
+			const entries = await agent.db.getEntries()
+			const filteredEntries = entries.filter(
+				(entry) => new Date(entry.createdAt * 1000).getFullYear() === year,
+			)
+			const tags = await agent.db.getTags()
+			const filteredTags = tags.filter(
+				(tag) => new Date(tag.createdAt * 1000).getFullYear() === year,
+			)
+			const videoUri = await createWrappedVideo({
+				entries: filteredEntries,
+				tags: filteredTags,
+				year,
+				onProgress: (progress) => {
+					const { progressToken } = _meta ?? {}
+					if (!progressToken) return
+					void sendNotification({
+						method: 'notifications/progress',
+						params: {
+							progressToken,
+							progress,
+							total: 1,
+							message: 'Creating video...',
+						},
+					})
+				},
+			})
+			return {
+				structuredContent: { videoUri },
+				content: [
+					createTextContent(
+						`Video created successfully with URI "${videoUri}"`,
+					),
+				],
+			}
+		},
+	)
 }
 
 function createTextContent(text: unknown): CallToolResult['content'][number] {
@@ -455,4 +519,141 @@ async function elicitConfirmation(agent: EpicMeMCP, message: string) {
 		},
 	})
 	return result.action === 'accept' && result.content?.confirmed === true
+}
+
+async function createWrappedVideo({
+	entries,
+	tags,
+	year,
+	onProgress,
+}: {
+	entries: Array<{ id: number; content: string }>
+	tags: Array<{ id: number; name: string }>
+	year: number
+	onProgress: (progress: number) => void
+}) {
+	// Create a video with multiple lines of text fading/scrolling up in sequence
+	const totalDurationSeconds = 60 * 2
+	const texts = [
+		{
+			text: `Hello ${userInfo().username}!`,
+			color: 'white',
+			fontsize: 72,
+		},
+		{
+			text: `It's ${new Date().toLocaleDateString('en-US', {
+				month: 'long',
+				day: 'numeric',
+				year: 'numeric',
+			})}`,
+			color: 'green',
+			fontsize: 72,
+		},
+		{
+			text: `Here's your EpicMe wrapped video for ${year}`,
+			color: 'yellow',
+			fontsize: 72,
+		},
+		{
+			text: `You wrote ${entries.length} entries in ${year}`,
+			color: '#ff69b4',
+			fontsize: 72,
+		},
+		{
+			text: `And you created ${tags.length} tags in ${year}`,
+			color: 'yellow',
+			fontsize: 72,
+		},
+		{ text: `Good job!`, color: 'red', fontsize: 72 },
+		{
+			text: `Keep Journaling in ${year + 1}!`,
+			color: '#ffa500',
+			fontsize: 72,
+		},
+	]
+	const numTexts = texts.length
+	const perTextDuration = totalDurationSeconds / numTexts
+	const outputFile = `./videos/wrapped-${year}.mp4`
+	// create directory if it doesn't exist
+	await fs.mkdir('./videos', { recursive: true })
+	const fontPath = './other/caveat-variable-font.ttf'
+
+	// Calculate timing for each text
+	const timings = texts.map((_, i) => {
+		const start = perTextDuration * i
+		const end = perTextDuration * (i + 1)
+		return { start, end }
+	})
+
+	// drawtext filters for fade, scroll, color, and scale
+	const drawtexts = texts.map((t, i) => {
+		const { start, end } = timings[i]!
+		const fadeInEnd = start + perTextDuration / 3
+		const fadeOutStart = end - perTextDuration / 3
+		// Calculate scroll rate so text moves from bottom to top during its segment
+		// y = h - (t - start) * (h + text_h) / perTextDuration
+		const scrollExpr = `h-((t-${start})*(h+text_h)/${perTextDuration})`
+		const fontcolor = t.color.startsWith('#')
+			? t.color.replace('#', '0x')
+			: t.color
+		// Escape single quotes and backslashes in text for ffmpeg
+		const safeText = t.text
+			.replace(/\\/g, '\\\\') // escape backslashes first!
+			.replace(/'/g, "'\\''") // escape single quotes for ffmpeg
+			.replace(/\n/g, '\\n')
+		return `drawtext=fontfile=${fontPath}:text='${safeText}':fontcolor=${fontcolor}:fontsize=${t.fontsize}:x=(w-text_w)/2:y=${scrollExpr}:alpha='if(lt(t,${start}),0,if(lt(t,${fadeInEnd}),1,if(lt(t,${fadeOutStart}),1,if(lt(t,${end}),((${end}-t)/${perTextDuration / 3}),0))))':shadowcolor=black:shadowx=4:shadowy=4`
+	})
+
+	const ffmpeg = spawn('ffmpeg', [
+		'-f',
+		'lavfi',
+		'-i',
+		`color=c=black:s=1280x720:d=${totalDurationSeconds}`,
+		'-vf',
+		drawtexts.join(','),
+		'-c:v',
+		'libx264',
+		'-preset',
+		'ultrafast',
+		'-crf',
+		'18',
+		'-pix_fmt',
+		'yuv420p',
+		'-y',
+		outputFile,
+	])
+
+	ffmpeg.stderr.on('data', (data) => {
+		const str = data.toString()
+		console.error(str)
+		const timeMatch = str.match(/time=(\d{2}):(\d{2}):(\d{2})\.(\d{2})/)
+		if (timeMatch) {
+			const hours = Number(timeMatch[1])
+			const minutes = Number(timeMatch[2])
+			const seconds = Number(timeMatch[3])
+			const fraction = Number(timeMatch[4])
+			const currentSeconds =
+				hours * 3600 + minutes * 60 + seconds + fraction / 100
+			const progress = Math.min(currentSeconds / totalDurationSeconds, 1)
+			console.error({
+				hours,
+				minutes,
+				seconds,
+				fraction,
+				currentSeconds,
+				progress,
+			})
+			onProgress(progress)
+		}
+	})
+
+	await new Promise((resolve, reject) => {
+		ffmpeg.on('close', (code) => {
+			if (code === 0) resolve(undefined)
+			else reject(new Error(`ffmpeg exited with code ${code}`))
+		})
+	})
+
+	const videoUri = `epicme://videos/wrapped-${year}`
+	return videoUri
 }
