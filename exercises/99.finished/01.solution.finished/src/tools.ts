@@ -437,6 +437,11 @@ function createTagResourceContent(tag: { id: number }): ResourceContent {
 }
 
 async function elicitConfirmation(agent: EpicMeMCP, message: string) {
+	const capabilities = agent.server.server.getClientCapabilities()
+	if (!capabilities?.elicitation) {
+		return true
+	}
+
 	const result = await agent.server.server.elicitInput({
 		message,
 		requestedSchema: {

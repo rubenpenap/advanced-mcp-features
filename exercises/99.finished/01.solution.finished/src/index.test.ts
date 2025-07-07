@@ -7,6 +7,7 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import {
 	CreateMessageRequestSchema,
 	type CreateMessageResult,
+	ElicitRequestSchema,
 	ResourceUpdatedNotificationSchema,
 } from '@modelcontextprotocol/sdk/types.js'
 import { test, expect } from 'vitest'
@@ -351,4 +352,136 @@ test('Resource subscriptions: entry and tag', async () => {
 	// Wait a short time to ensure no notifications are received
 	await new Promise((r) => setTimeout(r, 200))
 	expect(notifications).toHaveLength(0)
+})
+
+test('Elicitation: delete_entry confirmation', async () => {
+	await using setup = await setupClient({ capabilities: { elicitation: {} } })
+	const { client } = setup
+
+	// Set up a handler for elicitation requests
+	let elicitationRequest: any
+	client.setRequestHandler(ElicitRequestSchema, (req) => {
+		elicitationRequest = req
+		// Simulate user accepting the confirmation
+		return {
+			action: 'accept',
+			content: { confirmed: true },
+		}
+	})
+
+	// Create an entry to delete
+	const entryResult = await client.callTool({
+		name: 'create_entry',
+		arguments: {
+			title: 'Elicit Test Entry',
+			content: 'Testing elicitation on delete.',
+		},
+	})
+	const entry = (entryResult.structuredContent as any).entry
+	invariant(entry, '🚨 No entry resource found')
+	invariant(entry.id, '🚨 No entry ID found')
+
+	// Delete the entry, which should trigger elicitation
+	const deleteResult = await client.callTool({
+		name: 'delete_entry',
+		arguments: { id: entry.id },
+	})
+	const structuredContent = deleteResult.structuredContent as any
+	invariant(
+		structuredContent,
+		'🚨 No structuredContent returned from delete_entry',
+	)
+	invariant(
+		'success' in structuredContent,
+		'🚨 structuredContent missing success field',
+	)
+	expect(structuredContent.success).toBe(true)
+
+	invariant(elicitationRequest, '🚨 No elicitation request was sent')
+	const params = elicitationRequest.params
+	invariant(params, '🚨 elicitationRequest missing params')
+	invariant(
+		typeof params.message === 'string',
+		'🚨 elicitationRequest.params.message must be a string',
+	)
+	invariant(
+		params.message.match(/Are you sure you want to delete entry/i),
+		'🚨 elicitationRequest.params.message does not match expected confirmation prompt',
+	)
+	expect(params.message).toMatch(/Are you sure you want to delete entry/i)
+
+	invariant(
+		params.requestedSchema,
+		'🚨 elicitationRequest.params.requestedSchema is missing',
+	)
+	invariant(
+		params.requestedSchema.type === 'object',
+		'🚨 elicitationRequest.params.requestedSchema.type must be "object"',
+	)
+	invariant(
+		params.requestedSchema.properties &&
+			typeof params.requestedSchema.properties === 'object',
+		'🚨 elicitationRequest.params.requestedSchema.properties must be an object',
+	)
+	invariant(
+		'confirmed' in params.requestedSchema.properties,
+		'🚨 elicitationRequest.params.requestedSchema.properties must include confirmed',
+	)
+	invariant(
+		params.requestedSchema.properties.confirmed.type === 'boolean',
+		'🚨 elicitationRequest.params.requestedSchema.properties.confirmed.type must be boolean',
+	)
+	expect(params.requestedSchema).toEqual(
+		expect.objectContaining({
+			type: 'object',
+			properties: expect.objectContaining({
+				confirmed: expect.objectContaining({ type: 'boolean' }),
+			}),
+		}),
+	)
+})
+
+test('Elicitation: delete_tag decline', async () => {
+	await using setup = await setupClient({ capabilities: { elicitation: {} } })
+	const { client } = setup
+
+	// Set up a handler for elicitation requests
+	client.setRequestHandler(ElicitRequestSchema, () => {
+		return {
+			action: 'decline',
+		}
+	})
+
+	// Create a tag to delete
+	const tagResult = await client.callTool({
+		name: 'create_tag',
+		arguments: {
+			name: 'Elicit Test Tag',
+			description: 'Testing elicitation decline.',
+		},
+	})
+	const tag = (tagResult.structuredContent as any).tag
+	invariant(tag, '🚨 No tag resource found')
+	invariant(tag.id, '🚨 No tag ID found')
+
+	// Delete the tag, which should trigger elicitation and be declined
+	const deleteResult = await client.callTool({
+		name: 'delete_tag',
+		arguments: { id: tag.id },
+	})
+	const structuredContent = deleteResult.structuredContent as any
+	invariant(
+		structuredContent,
+		'🚨 No structuredContent returned from delete_tag',
+	)
+	invariant(
+		'success' in structuredContent,
+		'🚨 structuredContent missing success field',
+	)
+	expect(structuredContent.success).toBe(false)
+	invariant(
+		'message' in structuredContent,
+		'🚨 structuredContent missing message field',
+	)
+	expect(structuredContent.message).toMatch(/cancelled/i)
 })
