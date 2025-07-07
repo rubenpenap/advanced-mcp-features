@@ -4,12 +4,8 @@ import { DB } from './index.js'
 
 async function seed() {
 	const dbPath = path.join(process.cwd(), 'db.sqlite')
-	const dbExists = await fs.stat(dbPath).then(
-		() => true,
-		() => false,
-	)
 	// delete the db file if it exists
-	if (dbExists) await fs.unlink(dbPath)
+	await fs.unlink(dbPath).catch(() => {})
 
 	const db = DB.getInstance(dbPath)
 

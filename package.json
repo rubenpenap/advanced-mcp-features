@@ -25,7 +25,7 @@
     "start": "npx --prefix ./epicshop epicshop start",
     "dev": "npx --prefix ./epicshop epicshop start",
     "dev:mcp": "node ./epicshop/run.js",
-    "inspect": "npx @kentcdodds/tmp-modelcontextprotocol_inspector",
+    "inspect": "npx @modelcontextprotocol/inspector",
     "test": "npm run test --silent --prefix playground",
     "test:e2e": "npm run test:e2e --silent --prefix playground",
     "test:e2e:dev": "npm run test:e2e:dev --silent --prefix playground",

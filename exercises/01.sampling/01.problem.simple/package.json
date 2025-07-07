@@ -16,14 +16,14 @@
   },
   "dependencies": {
     "@epic-web/invariant": "^1.0.0",
-    "@modelcontextprotocol/sdk": "npm:@kentcdodds/tmp-modelcontextprotocol_sdk@1.13.1-alpha.0",
+    "@modelcontextprotocol/sdk": "^1.15.0",
     "zod": "^3.25.67"
   },
   "devDependencies": {
     "@epic-web/config": "^1.21.0",
     "@epic-web/mcp-dev": "*",
     "@faker-js/faker": "^9.8.0",
-    "@kentcdodds/tmp-modelcontextprotocol_inspector": "^0.14.3-alpha.0",
+    "@modelcontextprotocol/inspector": "^0.15.0",
     "@types/node": "^24.0.3",
     "tsx": "^4.20.3",
     "typescript": "^5.8.3",

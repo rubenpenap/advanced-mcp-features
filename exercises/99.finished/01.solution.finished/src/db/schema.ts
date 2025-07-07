@@ -25,6 +25,10 @@ export const entrySchema = z.object({
 	updatedAt: timestampSchema,
 })
 
+export const entryWithTagsSchema = entrySchema.extend({
+	tags: z.array(z.object({ id: z.number(), name: z.string() })),
+})
+
 export const newEntrySchema = z.object({
 	title: z.string(),
 	content: z.string(),
@@ -159,3 +163,4 @@ export type NewEntry = z.infer<typeof newEntrySchema>
 export type Tag = z.infer<typeof tagSchema>
 export type NewTag = z.infer<typeof newTagSchema>
 export type EntryTag = z.infer<typeof entryTagSchema>
+export type EntryWithTags = z.infer<typeof entryWithTagsSchema>

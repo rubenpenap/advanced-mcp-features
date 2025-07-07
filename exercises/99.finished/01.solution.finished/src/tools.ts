@@ -5,15 +5,16 @@ import {
 	createEntryInputSchema,
 	createTagInputSchema,
 	entryIdSchema,
-	entrySchema,
 	entryTagIdSchema,
 	entryTagSchema,
+	entryWithTagsSchema,
 	tagIdSchema,
 	tagSchema,
 	updateEntryInputSchema,
 	updateTagInputSchema,
 } from './db/schema.ts'
 import { type EpicMeMCP } from './index.ts'
+import { suggestTagsSampling } from './sampling.ts'
 
 export async function initializeTools(agent: EpicMeMCP) {
 	agent.server.registerTool(
@@ -26,7 +27,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 				openWorldHint: false,
 			},
 			inputSchema: createEntryInputSchema,
-			outputSchema: { entry: entrySchema },
+			outputSchema: { entry: entryWithTagsSchema },
 		},
 		async (entry) => {
 			const createdEntry = await agent.db.createEntry(entry)
@@ -38,6 +39,9 @@ export async function initializeTools(agent: EpicMeMCP) {
 					})
 				}
 			}
+
+			void suggestTagsSampling(agent, createdEntry.id)
+
 			return {
 				structuredContent: { entry: createdEntry },
 				content: [
@@ -60,7 +64,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 				openWorldHint: false,
 			},
 			inputSchema: entryIdSchema,
-			outputSchema: { entry: entrySchema },
+			outputSchema: { entry: entryWithTagsSchema },
 		},
 		async ({ id }) => {
 			const entry = await agent.db.getEntry(id)
@@ -109,7 +113,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 				openWorldHint: false,
 			},
 			inputSchema: updateEntryInputSchema,
-			outputSchema: { entry: entrySchema },
+			outputSchema: { entry: entryWithTagsSchema },
 		},
 		async ({ id, ...updates }) => {
 			const existingEntry = await agent.db.getEntry(id)
@@ -140,7 +144,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 			outputSchema: {
 				success: z.boolean(),
 				message: z.string(),
-				entry: entrySchema.optional(),
+				entry: entryWithTagsSchema.optional(),
 			},
 		},
 		async ({ id }) => {

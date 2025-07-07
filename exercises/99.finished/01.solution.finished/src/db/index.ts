@@ -7,6 +7,7 @@ import {
 	type Tag,
 	type NewTag,
 	type EntryTag,
+	type EntryWithTags,
 	entrySchema,
 	newEntrySchema,
 	tagSchema,
@@ -19,6 +20,25 @@ export type { Entry, NewEntry, Tag, NewTag, EntryTag }
 
 export class DB {
 	#db: DatabaseSync
+	#subscribers = new Set<
+		(changes: { tags?: number[]; entries?: number[] }) => void
+	>()
+
+	subscribe(
+		subscriber: (changes: { tags?: number[]; entries?: number[] }) => void,
+	) {
+		this.#subscribers.add(subscriber)
+		return () => {
+			this.#subscribers.delete(subscriber)
+		}
+	}
+
+	#notifySubscribers(changes: { tags?: number[]; entries?: number[] }) {
+		for (const subscriber of this.#subscribers) {
+			subscriber(changes)
+		}
+	}
+
 	constructor(db: DatabaseSync) {
 		this.#db = db
 	}
@@ -60,6 +80,7 @@ export class DB {
 		if (!createdEntry) {
 			throw new Error('Failed to query created entry')
 		}
+		this.#notifySubscribers({ entries: [id] })
 		return createdEntry
 	}
 
@@ -87,7 +108,7 @@ export class DB {
 		const tags = z
 			.array(z.object({ id: z.number(), name: z.string() }))
 			.parse(tagsResult)
-		return { ...entry, tags }
+		return { ...entry, tags } as EntryWithTags
 	}
 
 	// TODO: listEntries to actually filter by tagIds
@@ -109,25 +130,25 @@ export class DB {
 		}
 		const updates = Object.entries(entry)
 			.filter(([key, value]) => value !== undefined)
-			.map(([key], index) => `${key} = ?${index + 2}`)
+			.map(([key]) => `${key} = ?`)
 			.join(', ')
 		if (!updates) {
 			return existingEntry
 		}
-		const stmt = this.#db.prepare(sql`
-			UPDATE entries 
-			SET ${updates}, updated_at = CURRENT_TIMESTAMP 
-			WHERE id = ?1
-		`)
 		const updateValues = [
-			id,
 			...Object.entries(entry)
 				.filter(([, value]) => value !== undefined)
 				.map(([, value]) => value),
+			id,
 		]
 		if (updateValues.some((v) => v === undefined)) {
 			throw new Error('Undefined value in updateEntry parameters')
 		}
+		const stmt = this.#db.prepare(sql`
+			UPDATE entries 
+			SET ${updates}, updated_at = CURRENT_TIMESTAMP 
+			WHERE id = ?
+		`)
 		const result = stmt.run(...updateValues)
 		if (!result.changes) {
 			throw new Error('Failed to update entry')
@@ -136,6 +157,7 @@ export class DB {
 		if (!updatedEntry) {
 			throw new Error('Failed to query updated entry')
 		}
+		this.#notifySubscribers({ entries: [id] })
 		return updatedEntry
 	}
 
@@ -149,6 +171,7 @@ export class DB {
 		if (!result.changes) {
 			throw new Error('Failed to delete entry')
 		}
+		this.#notifySubscribers({ entries: [id] })
 		return true
 	}
 
@@ -171,6 +194,7 @@ export class DB {
 		if (!createdTag) {
 			throw new Error('Failed to query created tag')
 		}
+		this.#notifySubscribers({ tags: [id] })
 		return createdTag
 	}
 
@@ -202,25 +226,25 @@ export class DB {
 		}
 		const updates = Object.entries(tag)
 			.filter(([, value]) => value !== undefined)
-			.map(([key], index) => `${key} = ?${index + 2}`)
+			.map(([key]) => `${key} = ?`)
 			.join(', ')
 		if (!updates) {
 			return existingTag
 		}
-		const stmt = this.#db.prepare(sql`
-			UPDATE tags
-			SET ${updates}, updated_at = CURRENT_TIMESTAMP
-			WHERE id = ?1
-		`)
 		const updateValues = [
-			id,
 			...Object.entries(tag)
 				.filter(([, value]) => value !== undefined)
 				.map(([, value]) => value),
+			id,
 		]
 		if (updateValues.some((v) => v === undefined)) {
 			throw new Error('Undefined value in updateTag parameters')
 		}
+		const stmt = this.#db.prepare(sql`
+			UPDATE tags
+			SET ${updates}, updated_at = CURRENT_TIMESTAMP
+			WHERE id = ?
+		`)
 		const result = stmt.run(...updateValues)
 		if (!result.changes) {
 			throw new Error('Failed to update tag')
@@ -229,6 +253,7 @@ export class DB {
 		if (!updatedTag) {
 			throw new Error('Failed to query updated tag')
 		}
+		this.#notifySubscribers({ tags: [id] })
 		return updatedTag
 	}
 
@@ -242,6 +267,7 @@ export class DB {
 		if (!result.changes) {
 			throw new Error('Failed to delete tag')
 		}
+		this.#notifySubscribers({ tags: [id] })
 		return true
 	}
 
@@ -271,6 +297,7 @@ export class DB {
 		if (!created) {
 			throw new Error('Failed to query created entry tag')
 		}
+		this.#notifySubscribers({ entries: [entryId], tags: [tagId] })
 		return created
 	}
 

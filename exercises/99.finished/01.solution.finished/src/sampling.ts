@@ -8,6 +8,11 @@ export async function suggestTagsSampling(agent: EpicMeMCP, entryId: number) {
 
 	const existingTags = await agent.db.getTags()
 	const currentTags = await agent.db.getEntryTags(entry.id)
+	const clientCapabilities = agent.server.server.getClientCapabilities()
+	if (!clientCapabilities?.sampling) {
+		console.error('Client does not support sampling, skipping sampling request')
+		return
+	}
 
 	const result = await agent.server.server.createMessage({
 		systemPrompt: `

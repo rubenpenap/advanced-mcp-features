@@ -28,7 +28,7 @@ const inspectorProcess = execa('mcp-inspector', [], {
 		...process.env,
 		SERVER_PORT: serverPort,
 		CLIENT_PORT: clientPort,
-		MCP_PROXY_AUTH_TOKEN: sessionToken,
+		MCP_PROXY_TOKEN: sessionToken,
 		ALLOWED_ORIGINS: [
 			`http://localhost:${clientPort}`,
 			`http://127.0.0.1:${clientPort}`,
@@ -38,20 +38,6 @@ const inspectorProcess = execa('mcp-inspector', [], {
 	},
 	stdio: ['inherit', 'pipe', 'inherit'], // capture stdout
 })
-
-/*
-Starting MCP inspector...
-
-⚙️ Proxy server listening on 127.0.0.1:10000
-
-🔑 Session token: 5c96a97c78de97283c838754ea89a74283d5ce87692dbe4a4903c416ae64fc6b
-Use this token to authenticate requests or set DANGEROUSLY_OMIT_AUTH=true to disable auth
-
-🔗 Open inspector with token pre-filled:
-   http://localhost:9000/?MCP_PROXY_AUTH_TOKEN=5c96a97c78de97283c838754ea89a74283d5ce87692dbe4a4903c416ae64fc6b
-   (Auto-open is disabled when authentication is enabled)
-
-*/
 
 // Wait for the inspector to be up before starting the proxy server
 function waitForInspectorReady() {
