@@ -388,11 +388,15 @@ export async function initializeTools(agent: EpicMeMCP) {
 					.describe(
 						'The year to create a wrapped video for (defaults to current year)',
 					),
+				mock: z
+					.boolean()
+					.default(false)
+					.describe('Whether to mock the video creation'),
 			},
 			outputSchema: { videoUri: z.string().describe('The URI of the video') },
 		},
 		async (
-			{ year = new Date().getFullYear() },
+			{ year = new Date().getFullYear(), mock = false },
 			{ sendNotification, _meta },
 		) => {
 			const entries = await agent.db.getEntries()
@@ -407,6 +411,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 				entries: filteredEntries,
 				tags: filteredTags,
 				year,
+				mock,
 				onProgress: (progress) => {
 					const { progressToken } = _meta ?? {}
 					if (!progressToken) return
@@ -526,12 +531,28 @@ async function createWrappedVideo({
 	tags,
 	year,
 	onProgress,
+	mock,
 }: {
 	entries: Array<{ id: number; content: string }>
 	tags: Array<{ id: number; name: string }>
 	year: number
+	mock: boolean
 	onProgress: (progress: number) => void
 }) {
+	if (mock) {
+		const waitTime = Math.random() * 1000 + 5000
+		// send progress notifications every 500ms during the wait
+		for (let i = 0; i < waitTime; i += 500) {
+			const progress = i / waitTime
+			if (progress >= 1) break
+
+			onProgress(progress)
+			await new Promise((resolve) => setTimeout(resolve, 500))
+		}
+		onProgress(1)
+		return 'epicme://videos/wrapped-2025'
+	}
+
 	// Create a video with multiple lines of text fading/scrolling up in sequence
 	const totalDurationSeconds = 60 * 2
 	const texts = [
