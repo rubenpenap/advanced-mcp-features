@@ -3,6 +3,8 @@ import { ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { type EpicMeMCP } from './index.ts'
 
 export async function initializeResources(agent: EpicMeMCP) {
+	agent.db.subscribe(() => agent.server.sendResourceListChanged())
+
 	agent.server.registerResource(
 		'tags',
 		'epicme://tags',
