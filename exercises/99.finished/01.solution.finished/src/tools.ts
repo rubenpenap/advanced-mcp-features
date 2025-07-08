@@ -388,15 +388,16 @@ export async function initializeTools(agent: EpicMeMCP) {
 					.describe(
 						'The year to create a wrapped video for (defaults to current year)',
 					),
-				mock: z
-					.boolean()
-					.default(false)
-					.describe('Whether to mock the video creation'),
+				mockTime: z
+					.number()
+					.describe(
+						'If set to > 0, use mock mode and this is the mock wait time in milliseconds',
+					),
 			},
 			outputSchema: { videoUri: z.string().describe('The URI of the video') },
 		},
 		async (
-			{ year = new Date().getFullYear(), mock = false },
+			{ year = new Date().getFullYear(), mockTime },
 			{ sendNotification, _meta, signal },
 		) => {
 			const entries = await agent.db.getEntries()
@@ -411,7 +412,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 				entries: filteredEntries,
 				tags: filteredTags,
 				year,
-				mock,
+				mockTime,
 				onProgress: (progress) => {
 					const { progressToken } = _meta ?? {}
 					if (!progressToken) return
@@ -569,14 +570,14 @@ async function createWrappedVideo({
 	entries,
 	tags,
 	year,
+	mockTime,
 	onProgress,
-	mock,
 	signal,
 }: {
 	entries: Array<{ id: number; content: string }>
 	tags: Array<{ id: number; name: string }>
 	year: number
-	mock: boolean
+	mockTime: number
 	onProgress: (progress: number) => void
 	signal: AbortSignal
 }) {
@@ -591,14 +592,14 @@ async function createWrappedVideo({
 		}
 	}
 	try {
-		if (mock) {
-			const waitTime = Math.random() * 1000 + 5000
-			for (let i = 0; i < waitTime; i += 500) {
+		if (mockTime > 0) {
+			const step = mockTime / 10
+			for (let i = 0; i < mockTime; i += step) {
 				if (signal.aborted) throw new Error('Cancelled')
-				const progress = i / waitTime
+				const progress = i / mockTime
 				if (progress >= 1) break
 				onProgress(progress)
-				await new Promise((resolve) => setTimeout(resolve, 500))
+				await new Promise((resolve) => setTimeout(resolve, step))
 			}
 			onProgress(1)
 			return 'epicme://videos/wrapped-2025'

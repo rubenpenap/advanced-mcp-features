@@ -8,7 +8,11 @@ import {
 	CreateMessageRequestSchema,
 	type CreateMessageResult,
 	ElicitRequestSchema,
+	ProgressNotificationSchema,
+	PromptListChangedNotificationSchema,
+	ResourceListChangedNotificationSchema,
 	ResourceUpdatedNotificationSchema,
+	ToolListChangedNotificationSchema,
 } from '@modelcontextprotocol/sdk/types.js'
 import { test, expect } from 'vitest'
 import { type z } from 'zod'
@@ -55,7 +59,7 @@ test('Tool Definition', async () => {
 	const [firstTool] = list.tools
 	invariant(firstTool, '🚨 No tools found')
 
-	expect(firstTool).toEqual(
+	expect(firstTool, '🚨 firstTool should be a create_entry tool').toEqual(
 		expect.objectContaining({
 			name: expect.stringMatching(/^create_entry$/i),
 			description: expect.stringMatching(/^create a new journal entry$/i),
@@ -138,7 +142,10 @@ test('Sampling', async () => {
 	const request = await messageRequestDeferred.promise
 
 	try {
-		expect(request).toEqual(
+		expect(
+			request,
+			'🚨 request should be a sampling/createMessage request',
+		).toEqual(
 			expect.objectContaining({
 				method: 'sampling/createMessage',
 				params: expect.objectContaining({
@@ -334,8 +341,14 @@ test('Resource subscriptions: entry and tag', async () => {
 		entryNotification.promise,
 	])
 
-	expect(tagNotif.params.uri).toBe(tagUri)
-	expect(entryNotif.params.uri).toBe(entryUri)
+	expect(
+		tagNotif.params.uri,
+		'🚨 Tag notification uri should be the tag URI',
+	).toBe(tagUri)
+	expect(
+		entryNotif.params.uri,
+		'🚨 Entry notification uri should be the entry URI',
+	).toBe(entryUri)
 
 	// Unsubscribe and trigger another update
 	notifications.length = 0
@@ -351,7 +364,10 @@ test('Resource subscriptions: entry and tag', async () => {
 	})
 	// Wait a short time to ensure no notifications are received
 	await new Promise((r) => setTimeout(r, 200))
-	expect(notifications).toHaveLength(0)
+	expect(
+		notifications,
+		'🚨 No notifications should be received after unsubscribing',
+	).toHaveLength(0)
 })
 
 test('Elicitation: delete_entry confirmation', async () => {
@@ -395,43 +411,24 @@ test('Elicitation: delete_entry confirmation', async () => {
 		'success' in structuredContent,
 		'🚨 structuredContent missing success field',
 	)
-	expect(structuredContent.success).toBe(true)
+	expect(
+		structuredContent.success,
+		'🚨 structuredContent.success should be true after deleting an entry',
+	).toBe(true)
 
 	invariant(elicitationRequest, '🚨 No elicitation request was sent')
 	const params = elicitationRequest.params
 	invariant(params, '🚨 elicitationRequest missing params')
-	invariant(
-		typeof params.message === 'string',
-		'🚨 elicitationRequest.params.message must be a string',
-	)
-	invariant(
-		params.message.match(/Are you sure you want to delete entry/i),
-		'🚨 elicitationRequest.params.message does not match expected confirmation prompt',
-	)
-	expect(params.message).toMatch(/Are you sure you want to delete entry/i)
 
-	invariant(
+	expect(
+		params.message,
+		'🚨 elicitationRequest.params.message should match expected confirmation prompt',
+	).toMatch(/Are you sure you want to delete entry/i)
+
+	expect(
 		params.requestedSchema,
-		'🚨 elicitationRequest.params.requestedSchema is missing',
-	)
-	invariant(
-		params.requestedSchema.type === 'object',
-		'🚨 elicitationRequest.params.requestedSchema.type must be "object"',
-	)
-	invariant(
-		params.requestedSchema.properties &&
-			typeof params.requestedSchema.properties === 'object',
-		'🚨 elicitationRequest.params.requestedSchema.properties must be an object',
-	)
-	invariant(
-		'confirmed' in params.requestedSchema.properties,
-		'🚨 elicitationRequest.params.requestedSchema.properties must include confirmed',
-	)
-	invariant(
-		params.requestedSchema.properties.confirmed.type === 'boolean',
-		'🚨 elicitationRequest.params.requestedSchema.properties.confirmed.type must be boolean',
-	)
-	expect(params.requestedSchema).toEqual(
+		'🚨 elicitationRequest.params.requestedSchema should match expected schema',
+	).toEqual(
 		expect.objectContaining({
 			type: 'object',
 			properties: expect.objectContaining({
@@ -470,18 +467,222 @@ test('Elicitation: delete_tag decline', async () => {
 		arguments: { id: tag.id },
 	})
 	const structuredContent = deleteResult.structuredContent as any
-	invariant(
-		structuredContent,
-		'🚨 No structuredContent returned from delete_tag',
-	)
-	invariant(
-		'success' in structuredContent,
-		'🚨 structuredContent missing success field',
-	)
-	expect(structuredContent.success).toBe(false)
+
+	expect(
+		structuredContent.success,
+		'🚨 structuredContent.success should be false after declining to delete a tag',
+	).toBe(false)
 	invariant(
 		'message' in structuredContent,
 		'🚨 structuredContent missing message field',
 	)
-	expect(structuredContent.message).toMatch(/cancelled/i)
+	expect(
+		structuredContent.message,
+		'🚨 structuredContent.message should include "cancelled"',
+	).toMatch(/cancelled/i)
+})
+
+test('ListChanged notification: resources', async () => {
+	await using setup = await setupClient()
+	const { client } = setup
+
+	const resourceListChanged = await deferred<any>()
+	client.setNotificationHandler(
+		ResourceListChangedNotificationSchema,
+		(notification) => {
+			resourceListChanged.resolve(notification)
+		},
+	)
+
+	// Trigger a DB change that should enable resources
+	await client.callTool({
+		name: 'create_tag',
+		arguments: {
+			name: faker.lorem.word(),
+			description: faker.lorem.sentence(),
+		},
+	})
+	await client.callTool({
+		name: 'create_entry',
+		arguments: {
+			title: faker.lorem.words(3),
+			content: faker.lorem.paragraphs(2),
+		},
+	})
+
+	let resourceNotif
+	try {
+		resourceNotif = await Promise.race([
+			resourceListChanged.promise,
+			AbortSignal.timeout(2000),
+		])
+	} catch {
+		throw new Error(
+			'🚨 Did not receive resources/listChanged notification when expected. Make sure your server calls sendResourceListChanged when resources change.',
+		)
+	}
+	expect(
+		resourceNotif,
+		'🚨 Did not receive resources/listChanged notification when expected. Make sure your server calls sendResourceListChanged when resources change.',
+	).toBeDefined()
+})
+
+test('ListChanged notification: tools', async () => {
+	await using setup = await setupClient()
+	const { client } = setup
+
+	const toolListChanged = await deferred<any>()
+	client.setNotificationHandler(
+		ToolListChangedNotificationSchema,
+		(notification) => {
+			toolListChanged.resolve(notification)
+		},
+	)
+
+	// Trigger a DB change that should enable tools
+	await client.callTool({
+		name: 'create_tag',
+		arguments: {
+			name: faker.lorem.word(),
+			description: faker.lorem.sentence(),
+		},
+	})
+	await client.callTool({
+		name: 'create_entry',
+		arguments: {
+			title: faker.lorem.words(3),
+			content: faker.lorem.paragraphs(2),
+		},
+	})
+
+	let toolNotif
+	try {
+		toolNotif = await Promise.race([
+			toolListChanged.promise,
+			AbortSignal.timeout(2000),
+		])
+	} catch {
+		throw new Error(
+			'🚨 Did not receive tools/listChanged notification when expected. Make sure your server notifies clients when tools are enabled/disabled.',
+		)
+	}
+	expect(
+		toolNotif,
+		'🚨 Did not receive tools/listChanged notification when expected. Make sure your server notifies clients when tools are enabled/disabled.',
+	).toBeDefined()
+})
+
+test('ListChanged notification: prompts', async () => {
+	await using setup = await setupClient()
+	const { client } = setup
+
+	const promptListChanged = await deferred<any>()
+	client.setNotificationHandler(
+		PromptListChangedNotificationSchema,
+		(notification) => {
+			promptListChanged.resolve(notification)
+		},
+	)
+
+	// Trigger a DB change that should enable prompts
+	await client.callTool({
+		name: 'create_tag',
+		arguments: {
+			name: faker.lorem.word(),
+			description: faker.lorem.sentence(),
+		},
+	})
+	await client.callTool({
+		name: 'create_entry',
+		arguments: {
+			title: faker.lorem.words(3),
+			content: faker.lorem.paragraphs(2),
+		},
+	})
+
+	let promptNotif
+	try {
+		promptNotif = await Promise.race([
+			promptListChanged.promise,
+			AbortSignal.timeout(2000),
+		])
+	} catch {
+		throw new Error(
+			'🚨 Did not receive prompts/listChanged notification when expected. Make sure your server notifies clients when prompts are enabled/disabled.',
+		)
+	}
+	expect(
+		promptNotif,
+		'🚨 Did not receive prompts/listChanged notification when expected. Make sure your server notifies clients when prompts are enabled/disabled.',
+	).toBeDefined()
+})
+
+test('Progress notification: create_wrapped_video (mock)', async () => {
+	await using setup = await setupClient()
+	const { client } = setup
+
+	const progressDeferred = await deferred<any>()
+	client.setNotificationHandler(ProgressNotificationSchema, (notification) => {
+		progressDeferred.resolve(notification)
+	})
+
+	// Ensure the tool is enabled by creating a tag and an entry first
+	await client.callTool({
+		name: 'create_tag',
+		arguments: {
+			name: faker.lorem.word(),
+			description: faker.lorem.sentence(),
+		},
+	})
+	await client.callTool({
+		name: 'create_entry',
+		arguments: {
+			title: faker.lorem.words(3),
+			content: faker.lorem.paragraphs(2),
+		},
+	})
+
+	// Call the tool with mockTime: 500
+	const progressToken = faker.string.uuid()
+	await client.callTool({
+		name: 'create_wrapped_video',
+		arguments: {
+			mockTime: 500,
+		},
+		_meta: {
+			progressToken,
+		},
+	})
+
+	let progressNotif
+	try {
+		progressNotif = await Promise.race([
+			progressDeferred.promise,
+			AbortSignal.timeout(2000),
+		])
+	} catch {
+		throw new Error(
+			'🚨 Did not receive progress notification for create_wrapped_video (mock). Make sure your tool sends progress updates when running in mock mode.',
+		)
+	}
+	expect(
+		progressNotif,
+		'🚨 Did not receive progress notification for create_wrapped_video (mock).',
+	).toBeDefined()
+	expect(
+		typeof progressNotif.params.progress,
+		'🚨 progress should be a number',
+	).toBe('number')
+	expect(
+		progressNotif.params.progress,
+		'🚨 progress should be a number between 0 and 1',
+	).toBeGreaterThanOrEqual(0)
+	expect(
+		progressNotif.params.progress,
+		'🚨 progress should be a number between 0 and 1',
+	).toBeLessThanOrEqual(1)
+	expect(
+		progressNotif.params.progressToken,
+		'🚨 progressToken should be a string',
+	).toBe(progressToken)
 })
