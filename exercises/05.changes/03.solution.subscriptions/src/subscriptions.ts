@@ -3,6 +3,7 @@ import {
 	UnsubscribeRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js'
 import { type EpicMeMCP } from './index.ts'
+import { listVideos, subscribe as subscribeToVideoChanges } from './video.ts'
 
 const uriSubscriptions = new Set<string>()
 
@@ -40,6 +41,19 @@ export async function initializeSubscriptions(agent: EpicMeMCP) {
 				await agent.server.server.notification({
 					method: 'notifications/resources/updated',
 					params: { uri, title: `Tag ${tagId}` },
+				})
+			}
+		}
+	})
+
+	subscribeToVideoChanges(async () => {
+		const videos = await listVideos()
+		for (const video of videos) {
+			const uri = `epicme://videos/${video}`
+			if (uriSubscriptions.has(uri)) {
+				await agent.server.server.notification({
+					method: 'notifications/resources/updated',
+					params: { uri, title: `Video ${video}` },
 				})
 			}
 		}

@@ -371,7 +371,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 		},
 	)
 
-	const createWrappedVideoTool = agent.server.registerTool(
+	agent.server.registerTool(
 		'create_wrapped_video',
 		{
 			title: 'Create Wrapped Video',
@@ -455,13 +455,11 @@ export async function initializeTools(agent: EpicMeMCP) {
 			if (!updateEntryTool.enabled) updateEntryTool.enable()
 			if (!listEntriesTool.enabled) listEntriesTool.enable()
 			if (!getEntryTool.enabled) getEntryTool.enable()
-			if (!createWrappedVideoTool.enabled) createWrappedVideoTool.enable()
 		} else {
 			if (deleteEntryTool.enabled) deleteEntryTool.disable()
 			if (updateEntryTool.enabled) updateEntryTool.disable()
 			if (listEntriesTool.enabled) listEntriesTool.disable()
 			if (getEntryTool.enabled) getEntryTool.disable()
-			if (createWrappedVideoTool.enabled) createWrappedVideoTool.disable()
 		}
 
 		const tags = await agent.db.getTags()
