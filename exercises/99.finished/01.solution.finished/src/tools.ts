@@ -1,6 +1,3 @@
-import { spawn } from 'node:child_process'
-import * as fs from 'node:fs/promises'
-import { userInfo } from 'node:os'
 import { invariant } from '@epic-web/invariant'
 import { type CallToolResult } from '@modelcontextprotocol/sdk/types.js'
 import { z } from 'zod'
@@ -417,6 +414,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 				tags: filteredTags,
 				year,
 				mockTime,
+				signal,
 				onProgress: (progress) => {
 					const { progressToken } = _meta ?? {}
 					if (!progressToken) return
@@ -430,14 +428,21 @@ export async function initializeTools(agent: EpicMeMCP) {
 						},
 					})
 				},
-				signal,
 			})
+
 			return {
 				structuredContent: { videoUri },
 				content: [
 					createTextContent(
 						`Video created successfully with URI "${videoUri}"`,
 					),
+					{
+						type: 'resource_link',
+						uri: videoUri,
+						name: `wrapped-${year}.mp4`,
+						description: `Wrapped Video for ${year}`,
+						mimeType: 'video/mp4',
+					},
 				],
 			}
 		},

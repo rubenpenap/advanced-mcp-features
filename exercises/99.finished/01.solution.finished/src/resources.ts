@@ -1,10 +1,15 @@
 import { invariant } from '@epic-web/invariant'
 import { ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { type EpicMeMCP } from './index.ts'
-import { getVideoBase64, listVideos } from './video.ts'
+import {
+	getVideoBase64,
+	listVideos,
+	subscribe as subscribeToVideoChanges,
+} from './video.ts'
 
 export async function initializeResources(agent: EpicMeMCP) {
 	agent.db.subscribe(() => agent.server.sendResourceListChanged())
+	subscribeToVideoChanges(() => agent.server.sendResourceListChanged())
 
 	agent.server.registerResource(
 		'tags',

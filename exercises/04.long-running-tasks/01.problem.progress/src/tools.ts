@@ -1,6 +1,3 @@
-import { spawn } from 'node:child_process'
-import * as fs from 'node:fs/promises'
-import { userInfo } from 'node:os'
 import { invariant } from '@epic-web/invariant'
 import { type CallToolResult } from '@modelcontextprotocol/sdk/types.js'
 import { z } from 'zod'
@@ -18,6 +15,7 @@ import {
 } from './db/schema.ts'
 import { type EpicMeMCP } from './index.ts'
 import { suggestTagsSampling } from './sampling.ts'
+import { createWrappedVideo } from './video.ts'
 
 export async function initializeTools(agent: EpicMeMCP) {
 	agent.server.registerTool(
@@ -399,7 +397,10 @@ export async function initializeTools(agent: EpicMeMCP) {
 			},
 			outputSchema: { videoUri: z.string().describe('The URI of the video') },
 		},
-		async ({ year = new Date().getFullYear(), mockTime }) => {
+		async (
+			{ year = new Date().getFullYear(), mockTime },
+			// 🐨 you'll need to use sendNotification and _meta for progress reporting
+		) => {
 			const entries = await agent.db.getEntries()
 			const filteredEntries = entries.filter(
 				(entry) => new Date(entry.createdAt * 1000).getFullYear() === year,
@@ -413,7 +414,15 @@ export async function initializeTools(agent: EpicMeMCP) {
 				tags: filteredTags,
 				year,
 				mockTime,
+				// 🐨 pass an onProgress callback here that reports progress to the user
+				// (see below for how to do that)
 			})
+			// 🐨 as the video is being created, you should report progress to the user
+			// using sendNotification and the progressToken from _meta. You'll need to
+			// pass an onProgress callback to createWrappedVideo above, and call
+			// sendNotification with the method of 'notifications/progress' and params
+			// that include the progressToken from _meta, the progress, total: 1, and
+			// message: 'Creating video...'
 			return {
 				structuredContent: { videoUri },
 				content: [
@@ -508,121 +517,4 @@ async function elicitConfirmation(agent: EpicMeMCP, message: string) {
 		},
 	})
 	return result.action === 'accept' && result.content?.confirmed === true
-}
-
-async function createWrappedVideo({
-	entries,
-	tags,
-	year,
-	mockTime,
-}: {
-	entries: Array<{ id: number; content: string }>
-	tags: Array<{ id: number; name: string }>
-	year: number
-	mockTime?: number
-}) {
-	let ffmpeg: ReturnType<typeof spawn> | undefined
-	if (mockTime && mockTime > 0) {
-		const step = mockTime / 10
-		for (let i = 0; i < mockTime; i += step) {
-			const progress = i / mockTime
-			if (progress >= 1) break
-			await new Promise((resolve) => setTimeout(resolve, step))
-		}
-		return `epicme://videos/wrapped-${year}`
-	}
-
-	const totalDurationSeconds = 60 * 2
-	const texts = [
-		{
-			text: `Hello ${userInfo().username}!`,
-			color: 'white',
-			fontsize: 72,
-		},
-		{
-			text: `It's ${new Date().toLocaleDateString('en-US', {
-				month: 'long',
-				day: 'numeric',
-				year: 'numeric',
-			})}`,
-			color: 'green',
-			fontsize: 72,
-		},
-		{
-			text: `Here's your EpicMe wrapped video for ${year}`,
-			color: 'yellow',
-			fontsize: 72,
-		},
-		{
-			text: `You wrote ${entries.length} entries in ${year}`,
-			color: '#ff69b4',
-			fontsize: 72,
-		},
-		{
-			text: `And you created ${tags.length} tags in ${year}`,
-			color: 'yellow',
-			fontsize: 72,
-		},
-		{ text: `Good job!`, color: 'red', fontsize: 72 },
-		{
-			text: `Keep Journaling in ${year + 1}!`,
-			color: '#ffa500',
-			fontsize: 72,
-		},
-	]
-	const numTexts = texts.length
-	const perTextDuration = totalDurationSeconds / numTexts
-	const outputFile = `./videos/wrapped-${year}.mp4`
-	await fs.mkdir('./videos', { recursive: true })
-	const fontPath = './other/caveat-variable-font.ttf'
-	const timings = texts.map((_, i) => {
-		const start = perTextDuration * i
-		const end = perTextDuration * (i + 1)
-		return { start, end }
-	})
-	const drawtexts = texts.map((t, i) => {
-		const { start, end } = timings[i]!
-		const fadeInEnd = start + perTextDuration / 3
-		const fadeOutStart = end - perTextDuration / 3
-		const scrollExpr = `h-((t-${start})*(h+text_h)/${perTextDuration})`
-		const fontcolor = t.color.startsWith('#')
-			? t.color.replace('#', '0x')
-			: t.color
-		const safeText = t.text
-			.replace(/\\/g, '\\\\')
-			.replace(/'/g, "'\\''")
-			.replace(/\n/g, '\\n')
-		return `drawtext=fontfile=${fontPath}:text='${safeText}':fontcolor=${fontcolor}:fontsize=${t.fontsize}:x=(w-text_w)/2:y=${scrollExpr}:alpha='if(lt(t,${start}),0,if(lt(t,${fadeInEnd}),1,if(lt(t,${fadeOutStart}),1,if(lt(t,${end}),((${end}-t)/${perTextDuration / 3}),0))))':shadowcolor=black:shadowx=4:shadowy=4`
-	})
-
-	const ffmpegPromise = new Promise((resolve, reject) => {
-		ffmpeg = spawn('ffmpeg', [
-			'-f',
-			'lavfi',
-			'-i',
-			`color=c=black:s=1280x720:d=${totalDurationSeconds}`,
-			'-vf',
-			drawtexts.join(','),
-			'-c:v',
-			'libx264',
-			'-preset',
-			'ultrafast',
-			'-crf',
-			'18',
-			'-pix_fmt',
-			'yuv420p',
-			'-y',
-			outputFile,
-		])
-
-		ffmpeg.on('close', (code) => {
-			if (code === 0) resolve(undefined)
-			else reject(new Error(`ffmpeg exited with code ${code}`))
-		})
-	})
-
-	await ffmpegPromise
-
-	const videoUri = `epicme://videos/wrapped-${year}`
-	return videoUri
 }

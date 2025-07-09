@@ -41,6 +41,12 @@
       "path": "exercises/04.long-running-tasks/01.solution.progress"
     },
     {
+      "path": "exercises/04.long-running-tasks/02.problem.cancellation"
+    },
+    {
+      "path": "exercises/04.long-running-tasks/02.solution.cancellation"
+    },
+    {
       "path": "exercises/99.finished/01.solution.finished"
     }
   ]
