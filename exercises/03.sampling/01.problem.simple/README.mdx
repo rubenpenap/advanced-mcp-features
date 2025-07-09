@@ -11,6 +11,12 @@ prompt for the LLM in the next step.
 
 **Here's what you'll do:**
 
+- When the create_entry tool is called, call the `suggestTagsSampling` function
+  with the agent and the createdEntry.id.
+- We don't want to wait for the sampling function to finish so instead of "await"
+  use "void" which effectively ignores the promise.
+- First check if the client supports sampling. If it does, proceed with the
+  sampling request.
 - Implement a function that sends a sampling request to the client using
   `agent.server.server.createMessage` (the `server.server` thing is funny, but
   our MCP server manages an internal server and that's what we're accessing).
@@ -22,10 +28,7 @@ prompt for the LLM in the next step.
 
 And don't forget to call it when the user creates a new journal entry!
 
-> **Note:** Before making a sampling request, you should check whether the
-> client supports sampling. You can do this with
-> `agent.server.server.getClientCapabilities()`. If sampling is not supported,
-> you should skip the sampling request. For example:
+Here's an example of how to check if the client supports sampling:
 
 ```ts
 const clientCapabilities = agent.server.server.getClientCapabilities()
