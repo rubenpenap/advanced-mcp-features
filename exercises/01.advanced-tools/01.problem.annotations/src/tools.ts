@@ -521,7 +521,6 @@ async function createWrappedVideo({
 			if (ffmpeg.stderr) {
 				ffmpeg.stderr.on('data', (data) => {
 					const str = data.toString()
-					console.error(str)
 					const timeMatch = str.match(/time=(\d{2}):(\d{2}):(\d{2})\.(\d{2})/)
 					if (timeMatch) {
 						const hours = Number(timeMatch[1])
@@ -531,14 +530,6 @@ async function createWrappedVideo({
 						const currentSeconds =
 							hours * 3600 + minutes * 60 + seconds + fraction / 100
 						const progress = Math.min(currentSeconds / totalDurationSeconds, 1)
-						console.error({
-							hours,
-							minutes,
-							seconds,
-							fraction,
-							currentSeconds,
-							progress,
-						})
 						onProgress(progress)
 					}
 				})

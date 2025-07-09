@@ -1,6 +1,7 @@
 import { invariant } from '@epic-web/invariant'
 import { ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { type EpicMeMCP } from './index.ts'
+import { getVideoBase64, listVideos } from './video.ts'
 
 export async function initializeResources(agent: EpicMeMCP) {
 	agent.db.subscribe(() => agent.server.sendResourceListChanged())
@@ -101,6 +102,47 @@ export async function initializeResources(agent: EpicMeMCP) {
 					{
 						mimeType: 'application/json',
 						text: JSON.stringify(entry),
+						uri: uri.toString(),
+					},
+				],
+			}
+		},
+	)
+
+	agent.server.registerResource(
+		'video',
+		new ResourceTemplate('epicme://videos/{videoId}', {
+			complete: {
+				async videoId(value) {
+					const videos = await listVideos()
+					return videos.filter((video) => video.includes(value))
+				},
+			},
+			list: async () => {
+				const videos = await listVideos()
+				return {
+					resources: videos.map((video) => ({
+						name: video,
+						uri: `epicme://videos/${video}`,
+						mimeType: 'application/json',
+					})),
+				}
+			},
+		}),
+		{
+			title: 'EpicMe Videos',
+			description: 'A single video with the given ID',
+		},
+		async (uri, { videoId }) => {
+			invariant(typeof videoId === 'string', 'Video ID is required')
+
+			const videoBase64 = await getVideoBase64(videoId)
+			invariant(videoBase64, `Video with ID "${videoId}" not found`)
+			return {
+				contents: [
+					{
+						mimeType: 'video/mp4',
+						text: videoBase64,
 						uri: uri.toString(),
 					},
 				],
