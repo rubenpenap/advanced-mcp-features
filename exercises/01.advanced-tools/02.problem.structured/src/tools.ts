@@ -384,6 +384,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 						'If set to > 0, use mock mode and this is the mock wait time in milliseconds',
 					),
 			},
+			// 🐨 add an outputSchema here with a video that is a videoSchema
 		},
 		async ({ year = new Date().getFullYear(), mockTime }) => {
 			const entries = await agent.db.getEntries()
@@ -460,6 +461,9 @@ function createTagResourceLink(tag: {
 	}
 }
 
+// 💣 we now use structuredContent to return the contents of the resources with
+// resource links to share the URIs. Feel free to delete the embedded resource
+// utilities below.
 type ResourceContent = CallToolResult['content'][number]
 
 function createEntryEmbeddedResource(entry: { id: number }): ResourceContent {
