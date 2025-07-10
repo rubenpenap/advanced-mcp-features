@@ -43,13 +43,15 @@ export async function initializeTools(agent: EpicMeMCP) {
 
 			void suggestTagsSampling(agent, createdEntry.id)
 
+			const structuredContent = { entry: createdEntry }
 			return {
-				structuredContent: { entry: createdEntry },
+				structuredContent,
 				content: [
 					createTextContent(
 						`Entry "${createdEntry.title}" created successfully with ID "${createdEntry.id}"`,
 					),
 					createEntryResourceLink(createdEntry),
+					createTextContent(structuredContent),
 				],
 			}
 		},
@@ -70,9 +72,13 @@ export async function initializeTools(agent: EpicMeMCP) {
 		async ({ id }) => {
 			const entry = await agent.db.getEntry(id)
 			invariant(entry, `Entry with ID "${id}" not found`)
+			const structuredContent = { entry }
 			return {
-				structuredContent: { entry },
-				content: [createTextContent(entry), createEntryResourceContent(entry)],
+				structuredContent,
+				content: [
+					createEntryResourceLink(entry),
+					createTextContent(structuredContent),
+				],
 			}
 		},
 	)
@@ -91,11 +97,13 @@ export async function initializeTools(agent: EpicMeMCP) {
 		async () => {
 			const entries = await agent.db.getEntries()
 			const entryLinks = entries.map(createEntryResourceLink)
+			const structuredContent = { entries }
 			return {
-				structuredContent: { entries },
+				structuredContent,
 				content: [
 					createTextContent(`Found ${entries.length} entries.`),
 					...entryLinks,
+					createTextContent(structuredContent),
 				],
 			}
 		},
@@ -119,13 +127,15 @@ export async function initializeTools(agent: EpicMeMCP) {
 			const existingEntry = await agent.db.getEntry(id)
 			invariant(existingEntry, `Entry with ID "${id}" not found`)
 			const updatedEntry = await agent.db.updateEntry(id, updates)
+			const structuredContent = { entry: updatedEntry }
 			return {
-				structuredContent: { entry: updatedEntry },
+				structuredContent,
 				content: [
 					createTextContent(
 						`Entry "${updatedEntry.title}" (ID: ${id}) updated successfully`,
 					),
 					createEntryResourceLink(updatedEntry),
+					createTextContent(structuredContent),
 				],
 			}
 		},
@@ -141,11 +151,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 				openWorldHint: false,
 			},
 			inputSchema: entryIdSchema,
-			outputSchema: {
-				success: z.boolean(),
-				message: z.string(),
-				entry: entryWithTagsSchema,
-			},
+			outputSchema: { success: z.boolean(), entry: entryWithTagsSchema },
 		},
 		async ({ id }) => {
 			const existingEntry = await agent.db.getEntry(id)
@@ -155,28 +161,31 @@ export async function initializeTools(agent: EpicMeMCP) {
 				`Are you sure you want to delete entry "${existingEntry.title}" (ID: ${id})?`,
 			)
 			if (!confirmed) {
+				const structuredContent = {
+					success: false,
+					entry: existingEntry,
+				}
 				return {
-					structuredContent: {
-						success: false,
-						message: 'Entry deletion cancelled',
-						entry: existingEntry,
-					},
-					content: [createTextContent('Entry deletion cancelled')],
+					structuredContent,
+					content: [
+						createTextContent(
+							`Deleting entry "${existingEntry.title}" (ID: ${id}) rejected by the user.`,
+						),
+						createTextContent(structuredContent),
+					],
 				}
 			}
-
 			await agent.db.deleteEntry(id)
 
-			const structuredContent = {
-				success: true,
-				message: `Entry "${existingEntry.title}" (ID: ${id}) deleted successfully`,
-				entry: existingEntry,
-			}
+			const structuredContent = { success: true, entry: existingEntry }
 			return {
 				structuredContent,
 				content: [
-					createTextContent(structuredContent.message),
+					createTextContent(
+						`Entry "${existingEntry.title}" (ID: ${id}) deleted successfully`,
+					),
 					createEntryResourceLink(existingEntry),
+					createTextContent(structuredContent),
 				],
 			}
 		},
@@ -196,13 +205,15 @@ export async function initializeTools(agent: EpicMeMCP) {
 		},
 		async (tag) => {
 			const createdTag = await agent.db.createTag(tag)
+			const structuredContent = { tag: createdTag }
 			return {
-				structuredContent: { tag: createdTag },
+				structuredContent,
 				content: [
 					createTextContent(
 						`Tag "${createdTag.name}" created successfully with ID "${createdTag.id}"`,
 					),
 					createTagResourceLink(createdTag),
+					createTextContent(structuredContent),
 				],
 			}
 		},
@@ -223,9 +234,13 @@ export async function initializeTools(agent: EpicMeMCP) {
 		async ({ id }) => {
 			const tag = await agent.db.getTag(id)
 			invariant(tag, `Tag ID "${id}" not found`)
+			const structuredContent = { tag }
 			return {
-				structuredContent: { tag },
-				content: [createTextContent(tag), createTagResourceContent(tag)],
+				structuredContent,
+				content: [
+					createTagResourceLink(tag),
+					createTextContent(structuredContent),
+				],
 			}
 		},
 	)
@@ -244,9 +259,14 @@ export async function initializeTools(agent: EpicMeMCP) {
 		async () => {
 			const tags = await agent.db.getTags()
 			const tagLinks = tags.map(createTagResourceLink)
+			const structuredContent = { tags }
 			return {
-				structuredContent: { tags },
-				content: [createTextContent(`Found ${tags.length} tags.`), ...tagLinks],
+				structuredContent,
+				content: [
+					createTextContent(`Found ${tags.length} tags.`),
+					...tagLinks,
+					createTextContent(structuredContent),
+				],
 			}
 		},
 	)
@@ -266,13 +286,15 @@ export async function initializeTools(agent: EpicMeMCP) {
 		},
 		async ({ id, ...updates }) => {
 			const updatedTag = await agent.db.updateTag(id, updates)
+			const structuredContent = { tag: updatedTag }
 			return {
-				structuredContent: { tag: updatedTag },
+				structuredContent,
 				content: [
 					createTextContent(
 						`Tag "${updatedTag.name}" (ID: ${id}) updated successfully`,
 					),
 					createTagResourceLink(updatedTag),
+					createTextContent(structuredContent),
 				],
 			}
 		},
@@ -288,42 +310,40 @@ export async function initializeTools(agent: EpicMeMCP) {
 				openWorldHint: false,
 			},
 			inputSchema: tagIdSchema,
-			outputSchema: {
-				success: z.boolean(),
-				message: z.string(),
-				tag: tagSchema,
-			},
+			outputSchema: { success: z.boolean(), tag: tagSchema },
 		},
 		async ({ id }) => {
 			const existingTag = await agent.db.getTag(id)
 			invariant(existingTag, `Tag ID "${id}" not found`)
+
 			const confirmed = await elicitConfirmation(
 				agent,
 				`Are you sure you want to delete tag "${existingTag.name}" (ID: ${id})?`,
 			)
-
 			if (!confirmed) {
+				const structuredContent = { success: false, tag: existingTag }
 				return {
-					structuredContent: {
-						success: false,
-						message: 'Tag deletion cancelled',
-						tag: existingTag,
-					},
-					content: [createTextContent('Tag deletion cancelled')],
+					structuredContent,
+					content: [
+						createTextContent(
+							`Deleting tag "${existingTag.name}" (ID: ${id}) rejected by the user.`,
+						),
+						createTagResourceLink(existingTag),
+						createTextContent(structuredContent),
+					],
 				}
 			}
 
 			await agent.db.deleteTag(id)
-			const structuredContent = {
-				success: true,
-				message: `Tag "${existingTag.name}" (ID: ${id}) deleted successfully`,
-				tag: existingTag,
-			}
+			const structuredContent = { success: true, tag: existingTag }
 			return {
 				structuredContent,
 				content: [
-					createTextContent(structuredContent.message),
+					createTextContent(
+						`Tag "${existingTag.name}" (ID: ${id}) deleted successfully`,
+					),
 					createTagResourceLink(existingTag),
+					createTextContent(structuredContent),
 				],
 			}
 		},
@@ -340,11 +360,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 				openWorldHint: false,
 			},
 			inputSchema: entryTagIdSchema,
-			outputSchema: {
-				success: z.boolean(),
-				message: z.string(),
-				entryTag: entryTagSchema,
-			},
+			outputSchema: { success: z.boolean(), entryTag: entryTagSchema },
 		},
 		async ({ entryId, tagId }) => {
 			const tag = await agent.db.getTag(tagId)
@@ -355,17 +371,16 @@ export async function initializeTools(agent: EpicMeMCP) {
 				entryId,
 				tagId,
 			})
-			const structuredContent = {
-				success: true,
-				message: `Tag "${tag.name}" (ID: ${entryTag.tagId}) added to entry "${entry.title}" (ID: ${entryTag.entryId}) successfully`,
-				entryTag,
-			}
+			const structuredContent = { success: true, entryTag }
 			return {
 				structuredContent,
 				content: [
-					createTextContent(structuredContent.message),
+					createTextContent(
+						`Tag "${tag.name}" (ID: ${entryTag.tagId}) added to entry "${entry.title}" (ID: ${entryTag.entryId}) successfully`,
+					),
 					createTagResourceLink(tag),
 					createEntryResourceLink(entry),
+					createTextContent(structuredContent),
 				],
 			}
 		},
@@ -412,12 +427,19 @@ export async function initializeTools(agent: EpicMeMCP) {
 				year,
 				mockTime,
 			})
+			const structuredContent = { videoUri }
 			return {
-				structuredContent: { videoUri },
+				structuredContent,
 				content: [
-					createTextContent(
-						`Video created successfully with URI "${videoUri}"`,
-					),
+					createTextContent('Video created successfully'),
+					{
+						type: 'resource_link',
+						uri: videoUri,
+						name: `wrapped-${year}.mp4`,
+						description: `Wrapped Video for ${year}`,
+						mimeType: 'video/mp4',
+					},
+					createTextContent(structuredContent),
 				],
 			}
 		},
@@ -460,30 +482,6 @@ function createTagResourceLink(tag: {
 		name: tag.name,
 		description: `Tag: "${tag.name}"`,
 		mimeType: 'application/json',
-	}
-}
-
-type ResourceContent = CallToolResult['content'][number]
-
-function createEntryResourceContent(entry: { id: number }): ResourceContent {
-	return {
-		type: 'resource',
-		resource: {
-			uri: `epicme://entries/${entry.id}`,
-			mimeType: 'application/json',
-			text: JSON.stringify(entry),
-		},
-	}
-}
-
-function createTagResourceContent(tag: { id: number }): ResourceContent {
-	return {
-		type: 'resource',
-		resource: {
-			uri: `epicme://tags/${tag.id}`,
-			mimeType: 'application/json',
-			text: JSON.stringify(tag),
-		},
 	}
 }
 

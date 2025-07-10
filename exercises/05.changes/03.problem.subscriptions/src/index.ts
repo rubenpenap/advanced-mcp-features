@@ -3,6 +3,8 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { DB } from './db/index.ts'
 import { initializePrompts } from './prompts.ts'
 import { initializeResources } from './resources.ts'
+// 💰 you'll need this:
+// import { initializeSubscriptions } from './subscriptions.ts'
 import { initializeTools } from './tools.ts'
 
 export class EpicMeMCP {
@@ -14,10 +16,11 @@ export class EpicMeMCP {
 		},
 		{
 			capabilities: {
-				tools: { listChanged: true, subscribe: true },
-				resources: { listChanged: true, subscribe: true },
+				tools: { listChanged: true },
+				// 🐨 add the `subscribe` capability to the `resources` capability
+				resources: { listChanged: true },
 				completions: {},
-				prompts: { listChanged: true, subscribe: true },
+				prompts: { listChanged: true },
 			},
 			instructions: `
 EpicMe is a journaling app that allows users to write about and review their experiences, thoughts, and reflections.
@@ -36,6 +39,8 @@ You can also help users add tags to their entries and get all tags for an entry.
 		await initializeTools(this)
 		await initializeResources(this)
 		await initializePrompts(this)
+		// 💰 you'll need this:
+		// await initializeSubscriptions(this)
 	}
 }
 

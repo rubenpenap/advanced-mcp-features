@@ -17,6 +17,7 @@ export class EpicMeMCP {
 				tools: {},
 				resources: {},
 				completions: {},
+				// 🐨 add the `listChanged` capability to the `prompts` capability
 				prompts: {},
 			},
 			instructions: `
