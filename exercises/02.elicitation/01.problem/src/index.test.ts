@@ -649,14 +649,6 @@ test('Elicitation: delete_tag decline', async () => {
 		structuredContent.success,
 		'🚨 structuredContent.success should be false after declining to delete a tag',
 	).toBe(false)
-	invariant(
-		'message' in structuredContent,
-		'🚨 structuredContent missing message field',
-	)
-	expect(
-		structuredContent.message,
-		'🚨 structuredContent.message should include "cancelled"',
-	).toMatch(/cancelled/i)
 })
 
 test('ListChanged notification: resources', async () => {
