@@ -17,9 +17,9 @@ async (input) => {
   return {
     structuredContent,
     content: [
-      createTextContent(`Creature "${creature.name}" added to your stable!`),
+      createText(`Creature "${creature.name}" added to your stable!`),
       createCreatureResourceLink(creature),
-      createTextContent(structuredContent),
+      createText(structuredContent),
     ],
   }
 }

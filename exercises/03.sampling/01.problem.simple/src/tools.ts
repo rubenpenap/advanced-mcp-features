@@ -49,11 +49,11 @@ export async function initializeTools(agent: EpicMeMCP) {
 			return {
 				structuredContent,
 				content: [
-					createTextContent(
+					createText(
 						`Entry "${createdEntry.title}" created successfully with ID "${createdEntry.id}"`,
 					),
 					createEntryResourceLink(createdEntry),
-					createTextContent(structuredContent),
+					createText(structuredContent),
 				],
 			}
 		},
@@ -79,7 +79,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 				structuredContent,
 				content: [
 					createEntryResourceLink(entry),
-					createTextContent(structuredContent),
+					createText(structuredContent),
 				],
 			}
 		},
@@ -103,9 +103,9 @@ export async function initializeTools(agent: EpicMeMCP) {
 			return {
 				structuredContent,
 				content: [
-					createTextContent(`Found ${entries.length} entries.`),
+					createText(`Found ${entries.length} entries.`),
 					...entryLinks,
-					createTextContent(structuredContent),
+					createText(structuredContent),
 				],
 			}
 		},
@@ -133,11 +133,11 @@ export async function initializeTools(agent: EpicMeMCP) {
 			return {
 				structuredContent,
 				content: [
-					createTextContent(
+					createText(
 						`Entry "${updatedEntry.title}" (ID: ${id}) updated successfully`,
 					),
 					createEntryResourceLink(updatedEntry),
-					createTextContent(structuredContent),
+					createText(structuredContent),
 				],
 			}
 		},
@@ -170,10 +170,10 @@ export async function initializeTools(agent: EpicMeMCP) {
 				return {
 					structuredContent,
 					content: [
-						createTextContent(
+						createText(
 							`Deleting entry "${existingEntry.title}" (ID: ${id}) rejected by the user.`,
 						),
-						createTextContent(structuredContent),
+						createText(structuredContent),
 					],
 				}
 			}
@@ -184,11 +184,11 @@ export async function initializeTools(agent: EpicMeMCP) {
 			return {
 				structuredContent,
 				content: [
-					createTextContent(
+					createText(
 						`Entry "${existingEntry.title}" (ID: ${id}) deleted successfully`,
 					),
 					createEntryResourceLink(existingEntry),
-					createTextContent(structuredContent),
+					createText(structuredContent),
 				],
 			}
 		},
@@ -212,11 +212,11 @@ export async function initializeTools(agent: EpicMeMCP) {
 			return {
 				structuredContent,
 				content: [
-					createTextContent(
+					createText(
 						`Tag "${createdTag.name}" created successfully with ID "${createdTag.id}"`,
 					),
 					createTagResourceLink(createdTag),
-					createTextContent(structuredContent),
+					createText(structuredContent),
 				],
 			}
 		},
@@ -240,10 +240,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 			const structuredContent = { tag }
 			return {
 				structuredContent,
-				content: [
-					createTagResourceLink(tag),
-					createTextContent(structuredContent),
-				],
+				content: [createTagResourceLink(tag), createText(structuredContent)],
 			}
 		},
 	)
@@ -266,9 +263,9 @@ export async function initializeTools(agent: EpicMeMCP) {
 			return {
 				structuredContent,
 				content: [
-					createTextContent(`Found ${tags.length} tags.`),
+					createText(`Found ${tags.length} tags.`),
 					...tagLinks,
-					createTextContent(structuredContent),
+					createText(structuredContent),
 				],
 			}
 		},
@@ -293,11 +290,11 @@ export async function initializeTools(agent: EpicMeMCP) {
 			return {
 				structuredContent,
 				content: [
-					createTextContent(
+					createText(
 						`Tag "${updatedTag.name}" (ID: ${id}) updated successfully`,
 					),
 					createTagResourceLink(updatedTag),
-					createTextContent(structuredContent),
+					createText(structuredContent),
 				],
 			}
 		},
@@ -329,11 +326,11 @@ export async function initializeTools(agent: EpicMeMCP) {
 				return {
 					structuredContent,
 					content: [
-						createTextContent(
+						createText(
 							`Deleting tag "${existingTag.name}" (ID: ${id}) rejected by the user.`,
 						),
 						createTagResourceLink(existingTag),
-						createTextContent(structuredContent),
+						createText(structuredContent),
 					],
 				}
 			}
@@ -343,11 +340,11 @@ export async function initializeTools(agent: EpicMeMCP) {
 			return {
 				structuredContent,
 				content: [
-					createTextContent(
+					createText(
 						`Tag "${existingTag.name}" (ID: ${id}) deleted successfully`,
 					),
 					createTagResourceLink(existingTag),
-					createTextContent(structuredContent),
+					createText(structuredContent),
 				],
 			}
 		},
@@ -379,12 +376,12 @@ export async function initializeTools(agent: EpicMeMCP) {
 			return {
 				structuredContent,
 				content: [
-					createTextContent(
+					createText(
 						`Tag "${tag.name}" (ID: ${entryTag.tagId}) added to entry "${entry.title}" (ID: ${entryTag.entryId}) successfully`,
 					),
 					createTagResourceLink(tag),
 					createEntryResourceLink(entry),
-					createTextContent(structuredContent),
+					createText(structuredContent),
 				],
 			}
 		},
@@ -435,7 +432,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 			return {
 				structuredContent,
 				content: [
-					createTextContent('Video created successfully'),
+					createText('Video created successfully'),
 					{
 						type: 'resource_link',
 						uri: videoUri,
@@ -443,14 +440,14 @@ export async function initializeTools(agent: EpicMeMCP) {
 						description: `Wrapped Video for ${year}`,
 						mimeType: 'video/mp4',
 					},
-					createTextContent(structuredContent),
+					createText(structuredContent),
 				],
 			}
 		},
 	)
 }
 
-function createTextContent(text: unknown): CallToolResult['content'][number] {
+function createText(text: unknown): CallToolResult['content'][number] {
 	if (typeof text === 'string') {
 		return { type: 'text', text }
 	} else {

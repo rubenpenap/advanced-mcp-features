@@ -38,7 +38,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 
 			return {
 				content: [
-					createTextContent(
+					createText(
 						`Entry "${createdEntry.title}" created successfully with ID "${createdEntry.id}"`,
 					),
 					createEntryEmbeddedResource(createdEntry),
@@ -82,7 +82,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 			const entryLinks = entries.map(createEntryResourceLink)
 			return {
 				content: [
-					createTextContent(`Found ${entries.length} entries.`),
+					createText(`Found ${entries.length} entries.`),
 					...entryLinks,
 				],
 			}
@@ -108,7 +108,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 			const updatedEntry = await agent.db.updateEntry(id, updates)
 			return {
 				content: [
-					createTextContent(
+					createText(
 						`Entry "${updatedEntry.title}" (ID: ${id}) updated successfully`,
 					),
 					createEntryEmbeddedResource(updatedEntry),
@@ -135,7 +135,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 
 			return {
 				content: [
-					createTextContent(
+					createText(
 						`Entry "${existingEntry.title}" (ID: ${id}) deleted successfully`,
 					),
 					createEntryEmbeddedResource(existingEntry),
@@ -159,7 +159,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 			const createdTag = await agent.db.createTag(tag)
 			return {
 				content: [
-					createTextContent(
+					createText(
 						`Tag "${createdTag.name}" created successfully with ID "${createdTag.id}"`,
 					),
 					createTagEmbeddedResource(createdTag),
@@ -202,7 +202,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 			const tags = await agent.db.getTags()
 			const tagLinks = tags.map(createTagResourceLink)
 			return {
-				content: [createTextContent(`Found ${tags.length} tags.`), ...tagLinks],
+				content: [createText(`Found ${tags.length} tags.`), ...tagLinks],
 			}
 		},
 	)
@@ -223,7 +223,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 			const updatedTag = await agent.db.updateTag(id, updates)
 			return {
 				content: [
-					createTextContent(
+					createText(
 						`Tag "${updatedTag.name}" (ID: ${id}) updated successfully`,
 					),
 					createTagEmbeddedResource(updatedTag),
@@ -249,7 +249,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 			await agent.db.deleteTag(id)
 			return {
 				content: [
-					createTextContent(
+					createText(
 						`Tag "${existingTag.name}" (ID: ${id}) deleted successfully`,
 					),
 					createTagEmbeddedResource(existingTag),
@@ -281,7 +281,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 			})
 			return {
 				content: [
-					createTextContent(
+					createText(
 						`Tag "${tag.name}" (ID: ${entryTag.tagId}) added to entry "${entry.title}" (ID: ${entryTag.entryId}) successfully`,
 					),
 					createTagEmbeddedResource(tag),
@@ -333,7 +333,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 			})
 			return {
 				content: [
-					createTextContent('Video created successfully'),
+					createText('Video created successfully'),
 					{
 						type: 'resource_link',
 						uri: videoUri,
@@ -347,7 +347,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 	)
 }
 
-function createTextContent(text: unknown): CallToolResult['content'][number] {
+function createText(text: unknown): CallToolResult['content'][number] {
 	if (typeof text === 'string') {
 		return { type: 'text', text }
 	} else {

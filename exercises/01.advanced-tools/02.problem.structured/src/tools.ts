@@ -45,7 +45,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 			return {
 				// 🐨 add structuredContent here
 				content: [
-					createTextContent(
+					createText(
 						`Entry "${createdEntry.title}" created successfully with ID "${createdEntry.id}"`,
 					),
 					// 🐨 reduce duplication by switching this to a resource link
@@ -53,7 +53,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 					createEntryEmbeddedResource(createdEntry),
 
 					// 🐨 add the structuredContent as a text block
-					// 💰 createTextContent(structuredContent),
+					// 💰 createText(structuredContent),
 				],
 			}
 		},
@@ -104,7 +104,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 			return {
 				// 🐨 add structuredContent here
 				content: [
-					createTextContent(`Found ${entries.length} entries.`),
+					createText(`Found ${entries.length} entries.`),
 					...entryLinks,
 					// 🐨 add the structuredContent as a text block
 				],
@@ -134,7 +134,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 			return {
 				// 🐨 add structuredContent here
 				content: [
-					createTextContent(
+					createText(
 						`Entry "${updatedEntry.title}" (ID: ${id}) updated successfully`,
 					),
 					// 🐨 reduce duplication by switching this to a resource link
@@ -166,7 +166,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 			return {
 				// 🐨 add structuredContent here
 				content: [
-					createTextContent(
+					createText(
 						`Entry "${existingEntry.title}" (ID: ${id}) deleted successfully`,
 					),
 					// 🐨 reduce duplication by switching this to a resource link
@@ -195,7 +195,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 			return {
 				// 🐨 add structuredContent here
 				content: [
-					createTextContent(
+					createText(
 						`Tag "${createdTag.name}" created successfully with ID "${createdTag.id}"`,
 					),
 					// 🐨 reduce duplication by switching this to a resource link
@@ -225,7 +225,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 			return {
 				// 🐨 add structuredContent here
 				content: [
-					createTextContent(tag),
+					createText(tag),
 					// 🐨 reduce duplication by switching this to a resource link
 					createTagEmbeddedResource(tag),
 					// 🐨 add the structuredContent as a text block
@@ -252,7 +252,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 			return {
 				// 🐨 add structuredContent here
 				content: [
-					createTextContent(`Found ${tags.length} tags.`),
+					createText(`Found ${tags.length} tags.`),
 					...tagLinks,
 					// 🐨 add the structuredContent as a text block
 				],
@@ -279,7 +279,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 			return {
 				// 🐨 add structuredContent here
 				content: [
-					createTextContent(
+					createText(
 						`Tag "${updatedTag.name}" (ID: ${id}) updated successfully`,
 					),
 					// 🐨 reduce duplication by switching this to a resource link
@@ -310,7 +310,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 			return {
 				// 🐨 add structuredContent here
 				content: [
-					createTextContent(
+					createText(
 						`Tag "${existingTag.name}" (ID: ${id}) deleted successfully`,
 					),
 					// 🐨 reduce duplication by switching this to a resource link
@@ -347,7 +347,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 			return {
 				// 🐨 add structuredContent here
 				content: [
-					createTextContent(
+					createText(
 						`Tag "${tag.name}" (ID: ${entryTag.tagId}) added to entry "${entry.title}" (ID: ${entryTag.entryId}) successfully`,
 					),
 					// 🐨 reduce duplication by switching this to a resource link
@@ -405,7 +405,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 			return {
 				// 🐨 add structuredContent here
 				content: [
-					createTextContent('Video created successfully'),
+					createText('Video created successfully'),
 					// 🦉 keep the resource link here. Even though the structuredContent
 					// has the URI, clients may not look for it and instead look for resource links
 					{
@@ -422,7 +422,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 	)
 }
 
-function createTextContent(text: unknown): CallToolResult['content'][number] {
+function createText(text: unknown): CallToolResult['content'][number] {
 	if (typeof text === 'string') {
 		return { type: 'text', text }
 	} else {
