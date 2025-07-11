@@ -11,7 +11,10 @@
       "𝕏": "kentcdodds"
     },
     "stackBlitzConfig": {
-      "view": "editor"
+      "view": "editor",
+      "terminalHeight": 0,
+      "hidedevtools": true,
+      "hideNavigation": true
     },
     "product": {
       "host": "www.epicai.pro",
