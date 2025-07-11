@@ -294,31 +294,35 @@ export async function initializeTools(agent: EpicMeMCP) {
 			const existingTag = await agent.db.getTag(id)
 			invariant(existingTag, `Tag ID "${id}" not found`)
 
-			const result = await agent.server.server.elicitInput({
-				message: `Are you sure you want to delete tag "${existingTag.name}" (ID: ${id})?`,
-				requestedSchema: {
-					type: 'object',
-					properties: {
-						confirmed: {
-							type: 'boolean',
-							description: 'Whether to confirm the action',
+			const capabilities = agent.server.server.getClientCapabilities()
+			if (capabilities?.elicitation) {
+				const result = await agent.server.server.elicitInput({
+					message: `Are you sure you want to delete tag "${existingTag.name}" (ID: ${id})?`,
+					requestedSchema: {
+						type: 'object',
+						properties: {
+							confirmed: {
+								type: 'boolean',
+								description: 'Whether to confirm the action',
+							},
 						},
 					},
-				},
-			})
-			const confirmed =
-				result.action === 'accept' && result.content?.confirmed === true
-			if (!confirmed) {
-				const structuredContent = { success: false, tag: existingTag }
-				return {
-					structuredContent,
-					content: [
-						createTextContent(
-							`Deleting tag "${existingTag.name}" (ID: ${id}) rejected by the user.`,
-						),
-						createTagResourceLink(existingTag),
-						createTextContent(structuredContent),
-					],
+				})
+
+				const confirmed =
+					result.action === 'accept' && result.content?.confirmed === true
+				if (!confirmed) {
+					const structuredContent = { success: false, tag: existingTag }
+					return {
+						structuredContent,
+						content: [
+							createTextContent(
+								`Deleting tag "${existingTag.name}" (ID: ${id}) rejected by the user.`,
+							),
+							createTagResourceLink(existingTag),
+							createTextContent(structuredContent),
+						],
+					}
 				}
 			}
 

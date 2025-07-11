@@ -294,6 +294,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 			const existingTag = await agent.db.getTag(id)
 			invariant(existingTag, `Tag ID "${id}" not found`)
 
+			// 🐨 first check whether the client has the elicitInput capability, if it does then:
 			// 🐨 Use agent.server.server.elicitInput to ask the user to confirm deletion of the tag.
 			//    - The message should be: `Are you sure you want to delete tag "${existingTag.name}" (ID: ${id})?`
 			//    - The requestedSchema should be an object with a boolean property "confirmed".

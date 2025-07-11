@@ -91,3 +91,23 @@ for a new journal entry.
 
 This step will help you practice prompt engineering for structured outputs, and
 show you how to use the full power of MCP's sampling API for real-world tasks.
+
+There are tests to help verify your sampling request is working.
+
+To test this in the MCP inspector:
+
+- run the `create_entry` tool
+- check the "Sampling" navigation tab and you should have a sampling request
+- at this point, YOU are the LLM. You can copy paste this into your response:
+
+```json
+{
+	"model": "stub-model",
+	"stopReason": "endTurn",
+	"role": "assistant",
+	"content": {
+		"type": "text",
+		"text": "[{\"id\":2},{\"id\":4},{\"name\":\"Beach\",\"description\":\"Activities or experiences at the beach, including sand, water, and seaside fun\"}]"
+	}
+}
+```

@@ -49,9 +49,24 @@ if (!confirmed) {
 	provides clear feedback (no sandwiches are harmed)!
 </callout-success>
 
+Note you will also want to verify that the client has elicitation capabilities, and if they do not, then just proceed.
+
+```ts
+// the server.server is how the MCP SDK exposes the underlying server
+// instance for more advanced APIs like this one.
+const capabilities = agent.server.server.getClientCapabilities()
+if (capabilities?.elicitation) {
+	// do the elicitation
+} else {
+	// proceed without elicitation
+}
+```
+
 This approach ensures users are always in control of important actions, and the system responds with empathy and clarity.
 
 Test this one out by using the `delete_tag` tool.
 
 🐨 Kody will be there in <InlineFile file="src/tools.ts" /> to help you
 implement this.
+
+The MCP Inspector [does not support elicitation yet](https://github.com/modelcontextprotocol/inspector/issues/524), so you can check that our capabilities check is working by running the `delete_tag` tool, but to verify your elicitation is working, you'll need to run the tests.

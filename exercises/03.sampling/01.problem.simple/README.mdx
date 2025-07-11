@@ -31,8 +31,10 @@ And don't forget to call it when the user creates a new journal entry!
 Here's an example of how to check if the client supports sampling:
 
 ```ts
-const clientCapabilities = agent.server.server.getClientCapabilities()
-if (!clientCapabilities?.sampling) {
+// the server.server is how the MCP SDK exposes the underlying server
+// instance for more advanced APIs like this one.
+const capabilities = agent.server.server.getClientCapabilities()
+if (!capabilities?.sampling) {
 	console.error('Client does not support sampling, skipping sampling request')
 	return
 }
@@ -49,3 +51,23 @@ The `maxTokens` option references the max tokens the model should return.
 This step will help you get comfortable with the basic request/response flow for
 sampling in MCP, and set the stage for more advanced prompt engineering in the
 next step.
+
+There are tests to help verify your sampling request is working.
+
+To test this in the MCP inspector:
+
+- run the `create_entry` tool
+- check the "Sampling" navigation tab and you should have a sampling request
+- at this point, YOU are the LLM. You can copy paste this into your response:
+
+```json
+{
+	"model": "stub-model",
+	"stopReason": "endTurn",
+	"role": "assistant",
+	"content": {
+		"type": "text",
+		"text": "Good job!"
+	}
+}
+```
