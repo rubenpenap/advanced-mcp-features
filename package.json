@@ -10,6 +10,9 @@
       "avatar": "/images/instructor.png",
       "𝕏": "kentcdodds"
     },
+    "stackBlitzConfig": {
+      "view": "editor"
+    },
     "product": {
       "host": "www.epicai.pro",
       "displayName": "EpicAI.pro",
