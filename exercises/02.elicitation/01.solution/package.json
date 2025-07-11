@@ -11,15 +11,15 @@
   },
   "dependencies": {
     "@epic-web/invariant": "^1.0.0",
-    "@modelcontextprotocol/sdk": "^1.15.0",
+    "@modelcontextprotocol/sdk": "^1.15.1",
     "zod": "^3.25.67"
   },
   "devDependencies": {
     "@epic-web/config": "^1.21.0",
     "@epic-web/mcp-dev": "*",
-    "@faker-js/faker": "^9.8.0",
-    "@modelcontextprotocol/inspector": "^0.16.0",
-    "@types/node": "^24.0.3",
+    "@faker-js/faker": "^9.9.0",
+    "@modelcontextprotocol/inspector": "^0.16.1",
+    "@types/node": "^24.0.13",
     "tsx": "^4.20.3",
     "typescript": "^5.8.3",
     "vitest": "^3.2.4"

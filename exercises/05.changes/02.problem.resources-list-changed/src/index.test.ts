@@ -602,9 +602,9 @@ test('ListChanged notification: resources', async () => {
 	// Initially resources should be disabled/empty
 	const initialResources = await client.listResources()
 	expect(
-		initialResources.resources.length,
+		initialResources.resources,
 		'🚨 Resources should initially be empty when no entries/tags exist',
-	).toBe(0)
+	).toHaveLength(0)
 
 	// Trigger a DB change that should enable resources
 	await client.callTool({
@@ -678,9 +678,9 @@ test('ListChanged notification: tools', async () => {
 
 	// Should not have advanced tools initially
 	expect(
-		initialToolNames.includes('create_wrapped_video'),
+		initialToolNames,
 		'🚨 Advanced tools like create_wrapped_video should not be available initially',
-	).toBe(false)
+	).not.toContain('create_wrapped_video')
 
 	// Trigger a DB change that should enable additional tools
 	await client.callTool({
@@ -721,9 +721,9 @@ test('ListChanged notification: tools', async () => {
 	const enabledTools = await client.listTools()
 	const enabledToolNames = enabledTools.tools.map((t) => t.name)
 	expect(
-		enabledToolNames.includes('create_wrapped_video'),
+		enabledToolNames,
 		'🚨 Advanced tools like create_wrapped_video should be enabled after creating entries/tags. The server must dynamically enable/disable tools based on content.',
-	).toBe(true)
+	).toContain('create_wrapped_video')
 
 	// Verify that tools are properly enabled with correct count
 	expect(
