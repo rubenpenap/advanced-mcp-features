@@ -183,7 +183,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 			const tag = await agent.db.getTag(id)
 			invariant(tag, `Tag ID "${id}" not found`)
 			return {
-				content: [createTextContent(tag), createTagEmbeddedResource(tag)],
+				content: [createTagEmbeddedResource(tag)],
 			}
 		},
 	)

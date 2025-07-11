@@ -11,7 +11,6 @@ const timestampSchema = z.preprocess((val) => {
 	return val
 }, z.number())
 
-// Schema Validation
 export const entrySchema = z.object({
 	id: z.coerce.number(),
 	title: z.string(),
