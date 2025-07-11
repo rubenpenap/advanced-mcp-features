@@ -29,6 +29,10 @@ const inspectorProcess = execa('mcp-inspector', [], {
 		SERVER_PORT: serverPort,
 		CLIENT_PORT: clientPort,
 		MCP_PROXY_TOKEN: sessionToken,
+
+		// TODO: remove this in a couple months https://github.com/modelcontextprotocol/inspector/pull/517
+		MCP_PROXY_TOKEN: sessionToken,
+
 		MCP_AUTO_OPEN_ENABLED: 'false',
 		ALLOWED_ORIGINS: [
 			`http://localhost:${clientPort}`,
