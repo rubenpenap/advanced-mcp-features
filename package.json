@@ -12,9 +12,9 @@
     },
     "stackBlitzConfig": {
       "view": "editor",
-      "terminalHeight": 0,
-      "hidedevtools": true,
-      "hideNavigation": true
+      "terminalHeight": "0",
+      "hidedevtools": "1",
+      "hideNavigation": "1"
     },
     "product": {
       "host": "www.epicai.pro",
