@@ -5,6 +5,7 @@
     "title": "Advanced MCP Features 🐡",
     "subtitle": "Dive deeper into the Model Context Protocol",
     "githubRepo": "https://github.com/epicweb-dev/advanced-mcp-features",
+    "subdomain": "advanced-mcp-features",
     "instructor": {
       "name": "Kent C. Dodds",
       "avatar": "/images/instructor.png",
