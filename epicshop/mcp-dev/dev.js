@@ -22,17 +22,14 @@ const clientPort = await getPort({
 })
 
 const sessionToken = randomBytes(32).toString('hex')
+console.log('sessionToken', sessionToken)
 // Spawn mcp-inspector as a sidecar process
 const inspectorProcess = execa('mcp-inspector', [], {
 	env: {
 		...process.env,
 		SERVER_PORT: serverPort,
 		CLIENT_PORT: clientPort,
-		MCP_PROXY_TOKEN: sessionToken,
-
-		// TODO: remove this in a couple months https://github.com/modelcontextprotocol/inspector/pull/517
-		MCP_PROXY_TOKEN: sessionToken,
-
+		MCP_PROXY_AUTH_TOKEN: sessionToken,
 		MCP_AUTO_OPEN_ENABLED: 'false',
 		ALLOWED_ORIGINS: [
 			`http://localhost:${clientPort}`,
@@ -44,6 +41,20 @@ const inspectorProcess = execa('mcp-inspector', [], {
 	stdio: ['inherit', 'pipe', 'inherit'], // capture stdout
 })
 
+/*
+Starting MCP inspector...
+
+⚙️ Proxy server listening on 127.0.0.1:10000
+
+🔑 Session token: 5c96a97c78de97283c838754ea89a74283d5ce87692dbe4a4903c416ae64fc6b
+Use this token to authenticate requests or set DANGEROUSLY_OMIT_AUTH=true to disable auth
+
+🔗 Open inspector with token pre-filled:
+   http://localhost:9000/?MCP_PROXY_AUTH_TOKEN=5c96a97c78de97283c838754ea89a74283d5ce87692dbe4a4903c416ae64fc6b
+   (Auto-open is disabled when authentication is enabled)
+
+*/
+
 // Wait for the inspector to be up before starting the proxy server
 function waitForInspectorReady() {
 	return new Promise((resolve) => {
@@ -51,13 +62,15 @@ function waitForInspectorReady() {
 			const str = data.toString()
 			// Suppress specific logs from inspector
 			if (
-				str.includes('Proxy server listening on port') ||
-				str.includes('MCP Inspector is up and running')
+				/server listening/i.test(str) ||
+				/inspector is up/i.test(str) ||
+				/session token/i.test(str) ||
+				/DANGEROUSLY_OMIT_AUTH/i.test(str) ||
+				/open inspector/i.test(str) ||
+				/localhost/i.test(str) ||
+				/auto-open is disabled/i.test(str)
 			) {
-				// Do not print these lines
-				if (str.includes('MCP Inspector is up and running')) {
-					resolve()
-				}
+				resolve()
 				return
 			}
 			process.stdout.write(str) // print all other inspector logs
