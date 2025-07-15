@@ -22,7 +22,6 @@ const clientPort = await getPort({
 })
 
 const sessionToken = randomBytes(32).toString('hex')
-console.log('sessionToken', sessionToken)
 // Spawn mcp-inspector as a sidecar process
 const inspectorProcess = execa('mcp-inspector', [], {
 	env: {
@@ -44,14 +43,14 @@ const inspectorProcess = execa('mcp-inspector', [], {
 /*
 Starting MCP inspector...
 
-⚙️ Proxy server listening on 127.0.0.1:10000
+⚙️ Proxy server listening on localhost:10039
 
-🔑 Session token: 5c96a97c78de97283c838754ea89a74283d5ce87692dbe4a4903c416ae64fc6b
-Use this token to authenticate requests or set DANGEROUSLY_OMIT_AUTH=true to disable auth
+🔑 Session token: 27d8e2e73dfdc8051ba0c1cc38e07a0623680184167543ccfd33c61f2d3819b3
+   Use this token to authenticate requests or set DANGEROUSLY_OMIT_AUTH=true to disable auth
 
-🔗 Open inspector with token pre-filled:
-   http://localhost:9000/?MCP_PROXY_AUTH_TOKEN=5c96a97c78de97283c838754ea89a74283d5ce87692dbe4a4903c416ae64fc6b
-   (Auto-open is disabled when authentication is enabled)
+
+🚀 MCP Inspector is up and running at:
+   http://localhost:9038/?MCP_PROXY_PORT=10039&MCP_PROXY_AUTH_TOKEN=27d8e2e73dfdc8051ba0c1cc38e07a0623680184167543ccfd33c61f2d3819b3
 
 */
 
@@ -60,17 +59,18 @@ function waitForInspectorReady() {
 	return new Promise((resolve) => {
 		inspectorProcess.stdout.on('data', (data) => {
 			const str = data.toString()
+			if (str.includes(clientPort)) resolve()
+
 			// Suppress specific logs from inspector
 			if (
 				/server listening/i.test(str) ||
 				/inspector is up/i.test(str) ||
 				/session token/i.test(str) ||
 				/DANGEROUSLY_OMIT_AUTH/i.test(str) ||
-				/open inspector/i.test(str) ||
+				/up and running/i.test(str) ||
 				/localhost/i.test(str) ||
 				/auto-open is disabled/i.test(str)
 			) {
-				resolve()
 				return
 			}
 			process.stdout.write(str) // print all other inspector logs
