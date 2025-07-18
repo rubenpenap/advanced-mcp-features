@@ -676,11 +676,11 @@ test('ListChanged notification: tools', async () => {
 	const initialTools = await client.listTools()
 	const initialToolNames = initialTools.tools.map((t) => t.name)
 
-	// Should not have advanced tools initially
+	// Should not have tools requiring exisitng entries
 	expect(
 		initialToolNames,
-		'🚨 Advanced tools like create_wrapped_video should not be available initially',
-	).not.toContain('create_wrapped_video')
+		'🚨 Tools requiring entries like get_entry should not be available initially',
+	).not.toContain('get_entry')
 
 	// Trigger a DB change that should enable additional tools
 	await client.callTool({
@@ -722,8 +722,8 @@ test('ListChanged notification: tools', async () => {
 	const enabledToolNames = enabledTools.tools.map((t) => t.name)
 	expect(
 		enabledToolNames,
-		'🚨 Advanced tools like create_wrapped_video should be enabled after creating entries/tags. The server must dynamically enable/disable tools based on content.',
-	).toContain('create_wrapped_video')
+		'🚨 Tools requiring entries like get_entry should be enabled after creating entries/tags. The server must dynamically enable/disable tools based on content.',
+	).toContain('get_entry')
 
 	// Verify that tools are properly enabled with correct count
 	expect(
