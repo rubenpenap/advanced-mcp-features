@@ -11,6 +11,17 @@ Elicitation enables interactive workflows like confirming destructive actions, c
 	dialogs, forms, or any interface that fits their platform.
 </callout-info>
 
+## Elicitation Human-in-the-Loop vs. Tool Call Human-in-the-Loop
+
+When the user makes a prompt and the LLM decides to call a tool, the application should check with the user before calling the tool.
+
+<callout-success>
+	Elicitation is specifically designed for **structured, mid-process
+	interactions**. Unlike general chat or form submissions, elicitation happens
+	when the MCP server is actively processing a request and realizes it needs
+	more information to complete the task effectively.
+</callout-success>
+
 ## User Interaction Model
 
 When an MCP server needs more information, it sends an `elicitation/create` request to the client, specifying:
@@ -112,11 +123,28 @@ sequenceDiagram
   Client->>Server: Forward selection
 ```
 
+## When to Use Elicitation
+
+Elicitation is ideal for scenarios where:
+
+- **Confirmation is needed** for destructive or irreversible actions
+- **Additional context** would improve the quality of the response
+- **User preferences** need to be clarified mid-process
+- **Multi-step workflows** require intermediate user input
+
+<callout-warning>
+	Don't use elicitation for information that could have been provided in the
+	initial prompt. Elicitation should only be used when the server genuinely
+	needs more information to complete the current task effectively.
+</callout-warning>
+
 ## Recommended Practices
 
 - Use clear, concise messages for elicitation prompts.
 - Design schemas with only the fields you truly need (avoid requesting sensitive info).
 - Always handle accept, decline, and cancel actions.
+- Check client capabilities before attempting elicitation.
+- Use elicitation sparingly - it should enhance, not interrupt, the user experience.
 
 ## References
 

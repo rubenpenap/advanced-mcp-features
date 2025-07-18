@@ -136,19 +136,62 @@ For more details, see the [MCP Cancellation Documentation](https://modelcontextp
 Not everyone is familiar with signals and the `AbortController` API. Here's a simple example to illustrate how it works:
 
 ```js
+const { spawn } = require('child_process')
 const controller = new AbortController()
 const signal = controller.signal
 
-async function doLongTask(signal) {
-	for (let i = 0; i < 10; i++) {
-		if (signal.aborted) {
-			throw new Error('Operation cancelled')
-		}
-		// Simulate work
-		await new Promise((r) => setTimeout(r, 500))
-		console.log(`Step ${i + 1} complete`)
+// Track the child process that needs cleanup
+let childProcess = null
+
+// Add an event listener to the signal - this is crucial for cleanup!
+signal.addEventListener('abort', () => {
+	console.log('Signal was aborted! Killing child process...')
+	if (childProcess) {
+		childProcess.kill('SIGTERM')
+		childProcess = null
+		console.log('Child process killed')
 	}
-	return 'Done!'
+})
+
+async function doLongTask(signal) {
+	// Start a child process that processes data
+	childProcess = spawn('data-processor', ['--input', 'large-dataset.csv', '--output', 'processed-data.json'], {
+		stdio: ['pipe', 'pipe', 'pipe']
+	})
+
+	try {
+		// Listen to the child process output
+		childProcess.stdout.on('data', (data) => {
+			const output = data.toString().trim()
+			console.log('Child output:', output)
+
+			if (output.includes('Processing complete!')) {
+				console.log('All items processed successfully!')
+			}
+		})
+
+		// Wait for the child process to complete
+		await new Promise((resolve, reject) => {
+			childProcess.on('close', (code) => {
+				if (code === 0) {
+					resolve('Processing completed successfully')
+				} else {
+					reject(new Error(\`Child process exited with code \${code}\``))
+				}
+			})
+
+			childProcess.on('error', reject)
+		})
+
+		return 'Done!'
+	} finally {
+		// Clean up child process when task completes normally
+		if (childProcess) {
+			childProcess.kill('SIGTERM')
+			childProcess = null
+			console.log('Child process cleaned up normally')
+		}
+	}
 }
 
 doLongTask(signal)
