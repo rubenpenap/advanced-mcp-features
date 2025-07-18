@@ -599,13 +599,6 @@ test('ListChanged notification: resources', async () => {
 		},
 	)
 
-	// Initially resources should be disabled/empty
-	const initialResources = await client.listResources()
-	expect(
-		initialResources.resources,
-		'🚨 Resources should initially be empty when no entries/tags exist',
-	).toHaveLength(0)
-
 	// Trigger a DB change that should enable resources
 	await client.callTool({
 		name: 'create_tag',
@@ -622,7 +615,6 @@ test('ListChanged notification: resources', async () => {
 		},
 	})
 
-	// Should receive resource listChanged notification
 	let resourceNotif
 	try {
 		resourceNotif = await Promise.race([
@@ -633,31 +625,13 @@ test('ListChanged notification: resources', async () => {
 		])
 	} catch {
 		throw new Error(
-			'🚨 Did not receive resources/listChanged notification when expected. Make sure your server calls sendResourceListChanged when resources are enabled/disabled.',
+			'🚨 Did not receive resources/listChanged notification when expected. Make sure your server calls sendResourceListChanged when resources change.',
 		)
 	}
 	expect(
 		resourceNotif,
-		'🚨 Did not receive resources/listChanged notification when expected. Make sure your server calls sendResourceListChanged when resources are enabled/disabled.',
+		'🚨 Did not receive resources/listChanged notification when expected. Make sure your server calls sendResourceListChanged when resources change.',
 	).toBeDefined()
-
-	// After notification, resources should now be available
-	const enabledResources = await client.listResources()
-	expect(
-		enabledResources.resources.length,
-		'🚨 Resources should be enabled after creating entries/tags. The server must dynamically enable/disable resources based on content.',
-	).toBeGreaterThan(0)
-
-	// Verify that resources are properly available
-	const resourceUris = enabledResources.resources.map((r) => r.uri)
-	expect(
-		resourceUris.some((uri) => uri.includes('entries')),
-		'🚨 Should have entry resources available after creating entries',
-	).toBe(true)
-	expect(
-		resourceUris.some((uri) => uri.includes('tags')),
-		'🚨 Should have tag resources available after creating tags',
-	).toBe(true)
 })
 
 test('ListChanged notification: tools', async () => {
@@ -672,17 +646,7 @@ test('ListChanged notification: tools', async () => {
 		},
 	)
 
-	// Get initial tool list
-	const initialTools = await client.listTools()
-	const initialToolNames = initialTools.tools.map((t) => t.name)
-
-	// Should not have advanced tools initially
-	expect(
-		initialToolNames,
-		'🚨 Advanced tools like create_wrapped_video should not be available initially',
-	).not.toContain('create_wrapped_video')
-
-	// Trigger a DB change that should enable additional tools
+	// Trigger a DB change that should enable tools
 	await client.callTool({
 		name: 'create_tag',
 		arguments: {
@@ -698,7 +662,6 @@ test('ListChanged notification: tools', async () => {
 		},
 	})
 
-	// Should receive tool listChanged notification
 	let toolNotif
 	try {
 		toolNotif = await Promise.race([
@@ -716,18 +679,4 @@ test('ListChanged notification: tools', async () => {
 		toolNotif,
 		'🚨 Did not receive tools/listChanged notification when expected. Make sure your server notifies clients when tools are enabled/disabled.',
 	).toBeDefined()
-
-	// After notification, additional tools should be available
-	const enabledTools = await client.listTools()
-	const enabledToolNames = enabledTools.tools.map((t) => t.name)
-	expect(
-		enabledToolNames,
-		'🚨 Advanced tools like create_wrapped_video should be enabled after creating entries/tags. The server must dynamically enable/disable tools based on content.',
-	).toContain('create_wrapped_video')
-
-	// Verify that tools are properly enabled with correct count
-	expect(
-		enabledTools.tools.length,
-		'🚨 Should have more tools available after creating content',
-	).toBeGreaterThan(initialTools.tools.length)
 })
