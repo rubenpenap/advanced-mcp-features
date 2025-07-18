@@ -76,7 +76,7 @@ Clients can use annotations to:
 	invocation.
 </callout-success>
 
-### Best Practices
+### Recommended Practices
 
 1. **Be accurate about side effects:** Mark tools as `readOnlyHint: true` only if they never modify state.
 2. **Use descriptive titles:** The `title` annotation should be clear and human-friendly.
@@ -224,10 +224,10 @@ sequenceDiagram
     end
 ```
 
-### Best Practices
+### Recommended Practices
 
 1. **Define clear output schemas:** Use JSON Schema to describe all possible fields and types.
 2. **Validate on the server:** Always validate tool output before returning to the client (the SDK does this for us).
 3. **Handle validation errors gracefully:** Inform users or clients when output does not match the schema (the SDK does this for us).
 
-For more details, see the [official MCP documentation on structured content and output schemas](https://modelcontextprotocol.io/specification/2025-06-18/server/tools#structured-content).
+For more details, see the 📜 [official MCP documentation on structured content and output schemas](https://modelcontextprotocol.io/specification/2025-06-18/server/tools#structured-content).
