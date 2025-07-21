@@ -4,8 +4,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-timeout-minutes: 10
-
 on:
   push:
     branches:
@@ -14,6 +12,7 @@ on:
 
 jobs:
   setup:
+    timeout-minutes: 10
     name: 🔧 Setup
     strategy:
       matrix:
@@ -39,6 +38,7 @@ jobs:
 
   tests:
     name: 🧪 Test
+    timeout-minutes: 10
     runs-on: ubuntu-latest
     # Use continue-on-error to ensure this job doesn't fail the workflow
     continue-on-error: true
@@ -61,6 +61,7 @@ jobs:
 
   deploy:
     name: 🚀 Deploy
+    timeout-minutes: 10
     runs-on: ubuntu-latest
     # only deploy main branch on pushes on non-forks
     if:
