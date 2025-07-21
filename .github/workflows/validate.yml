@@ -4,6 +4,8 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+timeout-minutes: 10
+
 on:
   push:
     branches:
@@ -24,7 +26,7 @@ jobs:
       - name: ⎔ Setup node
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
 
       - name: ▶️ Run setup script
         run: npm run setup
