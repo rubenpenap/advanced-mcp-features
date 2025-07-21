@@ -87,6 +87,21 @@ Here's a simple example of a sampling request and response using MCP:
 }
 ```
 
+## Your Sampling Request is a Prompt
+
+When you make a sampling request, you're essentially crafting a prompt for the language model. The `systemPrompt` and `messages` you send become the instructions that guide the model's generation. This means that the quality and effectiveness of your sampling requests depend heavily on how well you structure your prompts.
+
+Here are some key prompting tips for effective sampling:
+
+- **Be specific and clear**: Instead of "generate tags," try "generate 3-5 relevant tags for a journal entry about [topic], using lowercase words separated by commas"
+- **Provide examples**: Show the model what you want by including sample inputs and outputs in your prompt
+- **Provide context**: Include relevant information in your messages to help the model understand what you're asking for
+- **Set expectations**: Use the system prompt to establish the model's role and the format you expect
+- **Test and iterate**: Start with simple prompts and refine them based on the results you get
+- **Consider safety**: Structure your prompts to avoid generating harmful or inappropriate content
+
+For more advanced prompting techniques and research-backed strategies, see [The Prompt Report](https://arxiv.org/abs/2406.06608), a comprehensive survey of 58 LLM prompting techniques and best practices for modern AI systems.
+
 MCP standardizes how servers and clients can request these generations. Instead
 of requiring every server to manage its own API keys and model integrations, MCP
 lets servers request completions through a client, which handles model
