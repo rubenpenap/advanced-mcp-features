@@ -10,7 +10,7 @@
     "fs-extra": "^11.3.0",
     "get-port": "^7.1.0",
     "http-proxy": "^1.18.1",
-    "match-sorter": "^8.0.3",
+    "match-sorter": "^8.1.0",
     "p-limit": "^6.2.0",
     "tsx": "^4.20.3"
   }

@@ -90,8 +90,8 @@ To make sure your environment is running correctly, please follow these
 additional steps:
 
 1. Run the workshop app with `npm start`
-2. Open the last exercise solution at
-   [`/exercise/05/02/solution?preview=solution`](http://localhost:5639/exercise/05/02/solution?preview=solution)
+2. Open
+   [the last exercise solution](http://localhost:5639/exercise/05/03/solution?preview=solution)
 3. Click the "Start App" button
 4. Click the "Connect" button
 
