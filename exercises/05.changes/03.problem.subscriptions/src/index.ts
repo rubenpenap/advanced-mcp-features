@@ -11,7 +11,8 @@ export class EpicMeMCP {
 	db: DB
 	server = new McpServer(
 		{
-			name: 'EpicMe',
+			name: 'epicme',
+			title: 'EpicMe',
 			version: '1.0.0',
 		},
 		{
