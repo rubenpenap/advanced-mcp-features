@@ -5,6 +5,7 @@ import {
 	createEntryInputSchema,
 	createTagInputSchema,
 	entryIdSchema,
+	entrySchema,
 	entryTagIdSchema,
 	entryTagSchema,
 	entryWithTagsSchema,
@@ -92,7 +93,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 				readOnlyHint: true,
 				openWorldHint: false,
 			},
-			outputSchema: { entries: z.array(entryWithTagsSchema) },
+			outputSchema: { entries: z.array(entrySchema) },
 		},
 		async () => {
 			const entries = await agent.db.getEntries()
