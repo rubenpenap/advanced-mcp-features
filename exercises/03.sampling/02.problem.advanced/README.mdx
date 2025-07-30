@@ -30,7 +30,7 @@ for a new journal entry.
 4. Evaluate the response (make sure it's in the right format)
 5. Repeat in new chats until you're happy with the prompt/response
 
-```json
+```json filename="example-user-message.json"
 {
 	"entry": {
 		"id": 6,
@@ -100,7 +100,7 @@ To test this in the MCP inspector:
 - check the "Sampling" navigation tab and you should have a sampling request
 - at this point, YOU are the LLM. You can copy paste this into your response:
 
-```json
+```json filename="example-sampling-client-response.json"
 {
 	"model": "stub-model",
 	"stopReason": "endTurn",

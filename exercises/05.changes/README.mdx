@@ -98,7 +98,7 @@ While `list_changed` tells clients about changes in what resources are available
 
 A client wants to stay updated on a specific space station module:
 
-```json
+```json filename="client-request.json" nocopy
 {
 	"jsonrpc": "2.0",
 	"id": 1,
@@ -109,7 +109,7 @@ A client wants to stay updated on a specific space station module:
 
 When the module's status changes (e.g., a new experiment starts, or the module is undocked), the server sends:
 
-```json
+```json filename="server-response.json" nocopy
 {
 	"jsonrpc": "2.0",
 	"method": "notifications/resources/updated",
