@@ -62,6 +62,33 @@ Here's a fun (and slightly dangerous) example of a tool that launches a real con
 	the wrong time!
 </callout-warning>
 
+### Table of Annotations
+
+| Annotation        | Default | Description                                                                                                     | Relevance                              |
+| ----------------- | ------- | --------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
+| `readOnlyHint`    | `false` | If true, the tool does not modify its environment.                                                              | Always relevant                        |
+| `destructiveHint` | `true`  | If true, the tool may perform destructive updates to its environment.                                           | Irrelevant when `readOnlyHint` is true |
+| `idempotentHint`  | `false` | If true, calling the tool repeatedly with the same arguments will have no additional effect on its environment. | Irrelevant when `readOnlyHint` is true |
+| `openWorldHint`   | `true`  | If true, this tool may interact with an "open world" of external entities (outside of the tool's domain).       | Always relevant                        |
+
+### Pragmatic Annotation Guidelines
+
+For practical tool design, consider these guidelines:
+
+- Use `destructiveHint: true` for tools that **delete** records or data
+- Use `destructiveHint: false` for tools that **modify** content (even if original is overwritten).
+- Use `idempotentHint: true` for tools that produce the same logical result regardless of call count. Ignore metadata changes (timestamps, access logs, etc.). Focus on the core operation outcome.
+- Use `idempotentHint: false` for tools that produce a different result each time they are called.
+- Use `openWorldHint: true` for tools that interact with systems external to your application.
+
+**Examples:**
+
+- `delete_user(id: 123)` - **Destructive, Idempotent**
+- `update_user(id: 123, {name: "John"})` - **Non-destructive, Idempotent**
+- `increment_counter(id: 123)` - **Non-destructive, Not idempotent**
+
+This approach prioritizes **practical usability** over theoretical precision because being pedantic about `updatedAt` timestamps makes annotations effectively meaningless.
+
 ### How Annotations Affect the Client
 
 Clients can use annotations to:

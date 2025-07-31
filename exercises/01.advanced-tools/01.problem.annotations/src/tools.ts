@@ -5,7 +5,6 @@ import {
 	createEntryInputSchema,
 	createTagInputSchema,
 	entryIdSchema,
-	entrySchema,
 	entryTagIdSchema,
 	tagIdSchema,
 	updateEntryInputSchema,
