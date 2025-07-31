@@ -30,5 +30,12 @@ Please respond with a proper commendation for yourself.
 		maxTokens: 10,
 	})
 
-	console.error('Received response:', result.content.text)
+	void agent.server.server.sendLoggingMessage({
+		level: 'info',
+		logger: 'sampling',
+		data: {
+			message: 'Received response from model',
+			modelResponse: result.content.text,
+		},
+	})
 }

@@ -19,6 +19,7 @@ export class EpicMeMCP {
 				// 🐨 add the `listChanged` capability to the `resources` capability
 				resources: {},
 				completions: {},
+				logging: {},
 				prompts: { listChanged: true },
 			},
 			instructions: `

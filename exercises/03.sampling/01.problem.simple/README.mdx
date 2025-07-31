@@ -24,7 +24,7 @@ prompt for the LLM in the next step.
   message that references the new journal entry's ID (we'll enhance this next).
 - Set a reasonable `maxTokens` value for the response.
 - Parse the model's response using a provided Zod schema.
-- Log the result to the console so you can inspect the model's output.
+- Send a notification with the result so you can see the model's output.
 
 And don't forget to call it when the user creates a new journal entry!
 
@@ -67,6 +67,23 @@ The `maxTokens` option references the max tokens the model should return.
 	The `system prompt` + `messages` + `OUTPUT MESSAGE` can't exceed the context
 	window size of the model you're user is using.
 </callout-warning>
+
+Here's an example of how to send a notification:
+
+```ts
+// void is to communicate we don't care about the return value. Fire and forget.
+void agent.server.server.sendLoggingMessage({
+	level: 'info', // "error" | "debug" | "info" | "notice" | "warning" | "critical" | "alert" | "emergency"
+	// data can be any JSON-serializable value
+	data: {
+		a: 1,
+		otherStuff: '...',
+	},
+})
+```
+
+Check the specification for more info:
+https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/logging#log-message-notifications
 
 This step will help you get comfortable with the basic request/response flow for
 sampling in MCP, and set the stage for more advanced prompt engineering in the
