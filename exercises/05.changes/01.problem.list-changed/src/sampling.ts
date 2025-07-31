@@ -87,7 +87,7 @@ If you have some suggestions, respond with an array of tag objects. Existing tag
 
 	void agent.server.server.sendLoggingMessage({
 		level: 'info',
-		logger: 'sampling',
+		logger: 'tag-generator',
 		data: {
 			message: 'Added tags to entry',
 			addedTags,

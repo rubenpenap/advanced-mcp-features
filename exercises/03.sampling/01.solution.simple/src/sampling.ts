@@ -32,7 +32,7 @@ Please respond with a proper commendation for yourself.
 
 	void agent.server.server.sendLoggingMessage({
 		level: 'info',
-		logger: 'sampling',
+		logger: 'tag-generator',
 		data: {
 			message: 'Received response from model',
 			modelResponse: result.content.text,
