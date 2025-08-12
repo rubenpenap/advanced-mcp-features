@@ -30,12 +30,14 @@ Please respond with a proper commendation for yourself.
 		maxTokens: 10,
 	})
 
-	void agent.server.server.sendLoggingMessage({
-		level: 'info',
-		logger: 'tag-generator',
-		data: {
-			message: 'Received response from model',
-			modelResponse: result.content.text,
-		},
-	})
+	if (['debug', 'info'].includes(agent.state.loggingLevel)) {
+		void agent.server.server.sendLoggingMessage({
+			level: 'info',
+			logger: 'tag-generator',
+			data: {
+				message: 'Received response from model',
+				modelResponse: result.content.text,
+			},
+		})
+	}
 }

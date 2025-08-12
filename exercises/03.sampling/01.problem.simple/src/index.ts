@@ -1,5 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
+// 💰 you'll need this:
+// import { SetLevelRequestSchema } from '@modelcontextprotocol/sdk/types.js'
 import { DB } from './db/index.ts'
 import { initializePrompts } from './prompts.ts'
 import { initializeResources } from './resources.ts'
@@ -7,6 +9,7 @@ import { initializeTools } from './tools.ts'
 
 export class EpicMeMCP {
 	db: DB
+	// 🐨 add a state object with a loggingLevel property set to 'info'
 	server = new McpServer(
 		{
 			name: 'epicme',
@@ -35,6 +38,9 @@ You can also help users add tags to their entries and get all tags for an entry.
 		this.db = DB.getInstance(path)
 	}
 	async init() {
+		// 🐨 add logging handler with this.server.server.setRequestHandler and the SetLevelRequestSchema
+		// 🐨 the callback should set the loggingLevel in the state from request.params.level and return an empty object
+		// 🦉 this is annoying, and hopefully can be managed by the SDK in the future: https://github.com/modelcontextprotocol/typescript-sdk/issues/871
 		await initializeTools(this)
 		await initializeResources(this)
 		await initializePrompts(this)
