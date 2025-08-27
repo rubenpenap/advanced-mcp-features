@@ -10,7 +10,7 @@ const resultSchema = z.object({
 })
 
 export async function suggestTagsSampling(agent: EpicMeMCP, entryId: number) {
-	const clientCapabilities = agent.server.server.getClientCapabilities()
+	const clientCapabilities = agent.mcp.server.getClientCapabilities()
 	if (!clientCapabilities?.sampling) {
 		console.error('Client does not support sampling, skipping sampling request')
 		return
@@ -22,7 +22,7 @@ export async function suggestTagsSampling(agent: EpicMeMCP, entryId: number) {
 	const existingTags = await agent.db.getTags()
 	const currentTags = await agent.db.getEntryTags(entry.id)
 
-	const result = await agent.server.server.createMessage({
+	const result = await agent.mcp.server.createMessage({
 		// 🐨 update this system prompt to explain what the LLM should do with the JSON
 		// we're going to pass to it.
 		// 🦉 You can develop this by chatting with an LLM yourself. Write out a
@@ -65,7 +65,7 @@ Please respond with a proper commendation for yourself.
 		currentTags,
 	}).catch((error) => {
 		console.error('Error parsing tag suggestions', error)
-		void agent.server.server.sendLoggingMessage({
+		void agent.mcp.server.sendLoggingMessage({
 			level: 'error',
 			data: {
 				message: 'Error parsing tag suggestions',
@@ -91,7 +91,7 @@ Please respond with a proper commendation for yourself.
 		.filter(Boolean)
 
 	if (['debug', 'info'].includes(agent.state.loggingLevel)) {
-		void agent.server.server.sendLoggingMessage({
+		void agent.mcp.server.sendLoggingMessage({
 			level: 'info',
 			logger: 'tag-generator',
 			data: {

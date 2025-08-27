@@ -5,7 +5,7 @@ import { type EpicMeMCP } from './index.ts'
 
 export async function initializePrompts(agent: EpicMeMCP) {
 	// 🐨 assign the returned prompt object to a variable called suggestTagsPrompt
-	agent.server.registerPrompt(
+	agent.mcp.registerPrompt(
 		'suggest_tags',
 		{
 			title: 'Suggest Tags',

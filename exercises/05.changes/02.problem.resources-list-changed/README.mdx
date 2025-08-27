@@ -9,7 +9,7 @@ Let's look at an example of how this is done:
 ```ts lines=16
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 
-const server = new McpServer(
+const mcp = new McpServer(
 	{ name: 'DuckCollector', version: '1.0.0' },
 	{
 		capabilities: {

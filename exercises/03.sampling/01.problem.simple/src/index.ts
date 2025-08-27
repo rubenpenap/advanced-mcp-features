@@ -10,7 +10,7 @@ import { initializeTools } from './tools.ts'
 export class EpicMeMCP {
 	db: DB
 	// 🐨 add a state object with a loggingLevel property set to 'info'
-	server = new McpServer(
+	mcp = new McpServer(
 		{
 			name: 'epicme',
 			title: 'EpicMe',
@@ -38,7 +38,7 @@ You can also help users add tags to their entries and get all tags for an entry.
 		this.db = DB.getInstance(path)
 	}
 	async init() {
-		// 🐨 add logging handler with this.server.server.setRequestHandler and the SetLevelRequestSchema
+		// 🐨 add logging handler with this.mcp.server.setRequestHandler and the SetLevelRequestSchema
 		// 🐨 the callback should set the loggingLevel in the state from request.params.level and return an empty object
 		// 🦉 this is annoying, and hopefully can be managed by the SDK in the future: https://github.com/modelcontextprotocol/typescript-sdk/issues/871
 		await initializeTools(this)
@@ -51,7 +51,7 @@ async function main() {
 	const agent = new EpicMeMCP(process.env.EPIC_ME_DB_PATH ?? './db.sqlite')
 	await agent.init()
 	const transport = new StdioServerTransport()
-	await agent.server.connect(transport)
+	await agent.mcp.connect(transport)
 	console.error('EpicMe MCP Server running on stdio')
 }
 

@@ -7,7 +7,7 @@ import { initializeTools } from './tools.ts'
 
 export class EpicMeMCP {
 	db: DB
-	server = new McpServer(
+	mcp = new McpServer(
 		{
 			name: 'epicme',
 			title: 'EpicMe',
@@ -44,7 +44,7 @@ async function main() {
 	const agent = new EpicMeMCP(process.env.EPIC_ME_DB_PATH ?? './db.sqlite')
 	await agent.init()
 	const transport = new StdioServerTransport()
-	await agent.server.connect(transport)
+	await agent.mcp.connect(transport)
 	console.error('EpicMe MCP Server running on stdio')
 }
 

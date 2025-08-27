@@ -19,7 +19,7 @@ import { suggestTagsSampling } from './sampling.ts'
 import { createWrappedVideo } from './video.ts'
 
 export async function initializeTools(agent: EpicMeMCP) {
-	agent.server.registerTool(
+	agent.mcp.registerTool(
 		'create_entry',
 		{
 			title: 'Create Entry',
@@ -58,7 +58,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 		},
 	)
 
-	const getEntryTool = agent.server.registerTool(
+	const getEntryTool = agent.mcp.registerTool(
 		'get_entry',
 		{
 			title: 'Get Entry',
@@ -84,7 +84,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 		},
 	)
 
-	const listEntriesTool = agent.server.registerTool(
+	const listEntriesTool = agent.mcp.registerTool(
 		'list_entries',
 		{
 			title: 'List Entries',
@@ -110,7 +110,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 		},
 	)
 
-	const updateEntryTool = agent.server.registerTool(
+	const updateEntryTool = agent.mcp.registerTool(
 		'update_entry',
 		{
 			title: 'Update Entry',
@@ -142,7 +142,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 		},
 	)
 
-	const deleteEntryTool = agent.server.registerTool(
+	const deleteEntryTool = agent.mcp.registerTool(
 		'delete_entry',
 		{
 			title: 'Delete Entry',
@@ -193,7 +193,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 		},
 	)
 
-	agent.server.registerTool(
+	agent.mcp.registerTool(
 		'create_tag',
 		{
 			title: 'Create Tag',
@@ -221,7 +221,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 		},
 	)
 
-	const getTagTool = agent.server.registerTool(
+	const getTagTool = agent.mcp.registerTool(
 		'get_tag',
 		{
 			title: 'Get Tag',
@@ -244,7 +244,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 		},
 	)
 
-	const listTagsTool = agent.server.registerTool(
+	const listTagsTool = agent.mcp.registerTool(
 		'list_tags',
 		{
 			title: 'List Tags',
@@ -270,7 +270,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 		},
 	)
 
-	const updateTagTool = agent.server.registerTool(
+	const updateTagTool = agent.mcp.registerTool(
 		'update_tag',
 		{
 			title: 'Update Tag',
@@ -299,7 +299,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 		},
 	)
 
-	const deleteTagTool = agent.server.registerTool(
+	const deleteTagTool = agent.mcp.registerTool(
 		'delete_tag',
 		{
 			title: 'Delete Tag',
@@ -348,7 +348,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 		},
 	)
 
-	const addTagToEntryTool = agent.server.registerTool(
+	const addTagToEntryTool = agent.mcp.registerTool(
 		'add_tag_to_entry',
 		{
 			title: 'Add Tag to Entry',
@@ -385,7 +385,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 		},
 	)
 
-	agent.server.registerTool(
+	agent.mcp.registerTool(
 		'create_wrapped_video',
 		{
 			title: 'Create Wrapped Video',
@@ -539,12 +539,12 @@ function createTagResourceLink(tag: {
 }
 
 async function elicitConfirmation(agent: EpicMeMCP, message: string) {
-	const capabilities = agent.server.server.getClientCapabilities()
+	const capabilities = agent.mcp.server.getClientCapabilities()
 	if (!capabilities?.elicitation) {
 		return true
 	}
 
-	const result = await agent.server.server.elicitInput({
+	const result = await agent.mcp.server.elicitInput({
 		message,
 		requestedSchema: {
 			type: 'object',

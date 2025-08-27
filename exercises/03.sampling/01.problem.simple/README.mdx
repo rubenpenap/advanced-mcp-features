@@ -18,7 +18,7 @@ prompt for the LLM in the next step.
 - First check if the client supports sampling. If it does, proceed with the
   sampling request.
 - Implement a function that sends a sampling request to the client using
-  `agent.server.server.createMessage` (the `server.server` thing is funny, but
+  `agent.mcp.server.createMessage` (the `mcp.server` thing is funny, but
   our MCP server manages an internal server and that's what we're accessing).
 - Use a simple system prompt (e.g., "You are a helpful assistant.") and a user
   message that references the new journal entry's ID (we'll enhance this next).
@@ -31,9 +31,9 @@ And don't forget to call it when the user creates a new journal entry!
 Here's an example of how to check if the client supports sampling:
 
 ```ts
-// the server.server is how the MCP SDK exposes the underlying server
+// the mcp.server is how the MCP SDK exposes the underlying server
 // instance for more advanced APIs like this one.
-const capabilities = agent.server.server.getClientCapabilities()
+const capabilities = agent.mcp.server.getClientCapabilities()
 if (!capabilities?.sampling) {
 	console.error('Client does not support sampling, skipping sampling request')
 	return
@@ -44,7 +44,7 @@ if (!capabilities?.sampling) {
 And here's an example of how to send a sampling request:
 
 ```ts
-const result = await agent.server.server.createMessage({
+const result = await agent.mcp.server.createMessage({
 	// the system prompt is used to explain to the LLM it's purpose
 	systemPrompt: '...',
 	messages: [
@@ -72,7 +72,7 @@ Here's an example of how to send a notification:
 
 ```ts
 // void is to communicate we don't care about the return value. Fire and forget.
-void agent.server.server.sendLoggingMessage({
+void agent.mcp.server.sendLoggingMessage({
 	level: 'info', // "error" | "debug" | "info" | "notice" | "warning" | "critical" | "alert" | "emergency"
 	// data can be any JSON-serializable value
 	data: {
@@ -88,8 +88,8 @@ https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/loggin
 To be able to send a logging message, you need to first advertise that we support logging and add support for the `SetLevelRequestSchema` request. You'll do this in <InlineFile file="./src/index.ts" />. As a general reminder, here's how you add request handlers:
 
 ```ts
-// this.server.server to access the underlying server instance
-this.server.server.setRequestHandler(
+// this.mcp.server to access the underlying server instance
+this.mcp.server.setRequestHandler(
 	RequestSchema, // this is the request schema you're adding support for
 	async (request) => {
 		// do something with the request

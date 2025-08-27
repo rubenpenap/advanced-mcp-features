@@ -8,10 +8,10 @@ import {
 } from './video.ts'
 
 export async function initializeResources(agent: EpicMeMCP) {
-	agent.db.subscribe(() => agent.server.sendResourceListChanged())
-	subscribeToVideoChanges(() => agent.server.sendResourceListChanged())
+	agent.db.subscribe(() => agent.mcp.sendResourceListChanged())
+	subscribeToVideoChanges(() => agent.mcp.sendResourceListChanged())
 
-	const tagListResource = agent.server.registerResource(
+	const tagListResource = agent.mcp.registerResource(
 		'tags',
 		'epicme://tags',
 		{
@@ -32,7 +32,7 @@ export async function initializeResources(agent: EpicMeMCP) {
 		},
 	)
 
-	const tagsResource = agent.server.registerResource(
+	const tagsResource = agent.mcp.registerResource(
 		'tag',
 		new ResourceTemplate('epicme://tags/{id}', {
 			complete: {
@@ -73,7 +73,7 @@ export async function initializeResources(agent: EpicMeMCP) {
 		},
 	)
 
-	const entryResource = agent.server.registerResource(
+	const entryResource = agent.mcp.registerResource(
 		'entry',
 		new ResourceTemplate('epicme://entries/{id}', {
 			list: undefined,
@@ -105,7 +105,7 @@ export async function initializeResources(agent: EpicMeMCP) {
 		},
 	)
 
-	const videoResource = agent.server.registerResource(
+	const videoResource = agent.mcp.registerResource(
 		'video',
 		new ResourceTemplate('epicme://videos/{videoId}', {
 			complete: {

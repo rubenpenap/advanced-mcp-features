@@ -4,7 +4,7 @@ import { type EpicMeMCP } from './index.ts'
 import { getVideoBase64, listVideos } from './video.ts'
 
 export async function initializeResources(agent: EpicMeMCP) {
-	agent.server.registerResource(
+	agent.mcp.registerResource(
 		'tags',
 		'epicme://tags',
 		{
@@ -25,7 +25,7 @@ export async function initializeResources(agent: EpicMeMCP) {
 		},
 	)
 
-	agent.server.registerResource(
+	agent.mcp.registerResource(
 		'tag',
 		new ResourceTemplate('epicme://tags/{id}', {
 			complete: {
@@ -66,7 +66,7 @@ export async function initializeResources(agent: EpicMeMCP) {
 		},
 	)
 
-	agent.server.registerResource(
+	agent.mcp.registerResource(
 		'entry',
 		new ResourceTemplate('epicme://entries/{id}', {
 			list: undefined,
@@ -98,7 +98,7 @@ export async function initializeResources(agent: EpicMeMCP) {
 		},
 	)
 
-	agent.server.registerResource(
+	agent.mcp.registerResource(
 		'video',
 		new ResourceTemplate('epicme://videos/{videoId}', {
 			complete: {
