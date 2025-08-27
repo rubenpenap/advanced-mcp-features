@@ -9,7 +9,7 @@ import { initializeTools } from './tools.ts'
 export class EpicMeMCP {
 	db: DB
 	state = { loggingLevel: 'info' }
-	mcp = new McpServer(
+	server = new McpServer(
 		{
 			name: 'epicme',
 			title: 'EpicMe',
@@ -37,7 +37,7 @@ You can also help users add tags to their entries and get all tags for an entry.
 		this.db = DB.getInstance(path)
 	}
 	async init() {
-		this.mcp.server.setRequestHandler(
+		this.server.server.setRequestHandler(
 			SetLevelRequestSchema,
 			async (request) => {
 				this.state.loggingLevel = request.params.level
@@ -54,7 +54,7 @@ async function main() {
 	const agent = new EpicMeMCP(process.env.EPIC_ME_DB_PATH ?? './db.sqlite')
 	await agent.init()
 	const transport = new StdioServerTransport()
-	await agent.mcp.connect(transport)
+	await agent.server.connect(transport)
 	console.error('EpicMe MCP Server running on stdio')
 }
 

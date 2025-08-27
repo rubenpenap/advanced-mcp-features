@@ -1,13 +1,13 @@
 import { type EpicMeMCP } from './index.ts'
 
 export async function suggestTagsSampling(agent: EpicMeMCP, entryId: number) {
-	const clientCapabilities = agent.mcp.server.getClientCapabilities()
+	const clientCapabilities = agent.server.server.getClientCapabilities()
 	if (!clientCapabilities?.sampling) {
 		console.error('Client does not support sampling, skipping sampling request')
 		return
 	}
 
-	const result = await agent.mcp.server.createMessage({
+	const result = await agent.server.server.createMessage({
 		systemPrompt: `
 You are a helpful assistant.
 
@@ -31,7 +31,7 @@ Please respond with a proper commendation for yourself.
 	})
 
 	if (['debug', 'info'].includes(agent.state.loggingLevel)) {
-		void agent.mcp.server.sendLoggingMessage({
+		void agent.server.server.sendLoggingMessage({
 			level: 'info',
 			logger: 'tag-generator',
 			data: {

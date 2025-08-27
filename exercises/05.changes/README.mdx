@@ -66,7 +66,7 @@ ResourceTemplate "expands" into and whether that resource template is available
 in the first place:
 
 ```ts lines=4-6,17-18
-const ingredientsResource = agent.mcp.registerResource(
+const ingredientsResource = agent.server.registerResource(
 	'ingredient',
 	new ResourceTemplate('sandwich://ingredients/{id}', {
 		list: async () => {

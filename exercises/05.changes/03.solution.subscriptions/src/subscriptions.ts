@@ -8,7 +8,7 @@ import { listVideos, subscribe as subscribeToVideoChanges } from './video.ts'
 const uriSubscriptions = new Set<string>()
 
 export async function initializeSubscriptions(agent: EpicMeMCP) {
-	agent.mcp.server.setRequestHandler(
+	agent.server.server.setRequestHandler(
 		SubscribeRequestSchema,
 		async ({ params }) => {
 			uriSubscriptions.add(params.uri)
@@ -16,7 +16,7 @@ export async function initializeSubscriptions(agent: EpicMeMCP) {
 		},
 	)
 
-	agent.mcp.server.setRequestHandler(
+	agent.server.server.setRequestHandler(
 		UnsubscribeRequestSchema,
 		async ({ params }) => {
 			uriSubscriptions.delete(params.uri)
@@ -28,7 +28,7 @@ export async function initializeSubscriptions(agent: EpicMeMCP) {
 		for (const entryId of changes.entries ?? []) {
 			const uri = `epicme://entries/${entryId}`
 			if (uriSubscriptions.has(uri)) {
-				await agent.mcp.server.notification({
+				await agent.server.server.notification({
 					method: 'notifications/resources/updated',
 					params: { uri, title: `Entry ${entryId}` },
 				})
@@ -38,7 +38,7 @@ export async function initializeSubscriptions(agent: EpicMeMCP) {
 		for (const tagId of changes.tags ?? []) {
 			const uri = `epicme://tags/${tagId}`
 			if (uriSubscriptions.has(uri)) {
-				await agent.mcp.server.notification({
+				await agent.server.server.notification({
 					method: 'notifications/resources/updated',
 					params: { uri, title: `Tag ${tagId}` },
 				})
@@ -51,7 +51,7 @@ export async function initializeSubscriptions(agent: EpicMeMCP) {
 		for (const video of videos) {
 			const uri = `epicme://videos/${video}`
 			if (uriSubscriptions.has(uri)) {
-				await agent.mcp.server.notification({
+				await agent.server.server.notification({
 					method: 'notifications/resources/updated',
 					params: { uri, title: `Video ${video}` },
 				})

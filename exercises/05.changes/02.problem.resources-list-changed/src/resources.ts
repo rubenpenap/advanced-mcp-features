@@ -10,12 +10,12 @@ import {
 
 export async function initializeResources(agent: EpicMeMCP) {
 	// 🐨 add a subscription to the database (💰 with agent.db.subscribe) that
-	// passes a callback which calls agent.mcp.sendResourceListChanged.
+	// passes a callback which calls agent.server.sendResourceListChanged.
 
 	// 🐨 add a subscription to the videos (💰 with subscribeToVideoChanges) that
-	// passes a callback which calls agent.mcp.sendResourceListChanged.
+	// passes a callback which calls agent.server.sendResourceListChanged.
 
-	const tagListResource = agent.mcp.registerResource(
+	const tagListResource = agent.server.registerResource(
 		'tags',
 		'epicme://tags',
 		{
@@ -36,7 +36,7 @@ export async function initializeResources(agent: EpicMeMCP) {
 		},
 	)
 
-	const tagsResource = agent.mcp.registerResource(
+	const tagsResource = agent.server.registerResource(
 		'tag',
 		new ResourceTemplate('epicme://tags/{id}', {
 			complete: {
@@ -77,7 +77,7 @@ export async function initializeResources(agent: EpicMeMCP) {
 		},
 	)
 
-	const entryResource = agent.mcp.registerResource(
+	const entryResource = agent.server.registerResource(
 		'entry',
 		new ResourceTemplate('epicme://entries/{id}', {
 			list: undefined,
@@ -109,7 +109,7 @@ export async function initializeResources(agent: EpicMeMCP) {
 		},
 	)
 
-	const videoResource = agent.mcp.registerResource(
+	const videoResource = agent.server.registerResource(
 		'video',
 		new ResourceTemplate('epicme://videos/{videoId}', {
 			complete: {

@@ -18,7 +18,7 @@ import { type EpicMeMCP } from './index.ts'
 import { createWrappedVideo } from './video.ts'
 
 export async function initializeTools(agent: EpicMeMCP) {
-	agent.mcp.registerTool(
+	agent.server.registerTool(
 		'create_entry',
 		{
 			title: 'Create Entry',
@@ -55,7 +55,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 		},
 	)
 
-	agent.mcp.registerTool(
+	agent.server.registerTool(
 		'get_entry',
 		{
 			title: 'Get Entry',
@@ -81,7 +81,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 		},
 	)
 
-	agent.mcp.registerTool(
+	agent.server.registerTool(
 		'list_entries',
 		{
 			title: 'List Entries',
@@ -107,7 +107,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 		},
 	)
 
-	agent.mcp.registerTool(
+	agent.server.registerTool(
 		'update_entry',
 		{
 			title: 'Update Entry',
@@ -139,7 +139,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 		},
 	)
 
-	agent.mcp.registerTool(
+	agent.server.registerTool(
 		'delete_entry',
 		{
 			title: 'Delete Entry',
@@ -170,7 +170,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 		},
 	)
 
-	agent.mcp.registerTool(
+	agent.server.registerTool(
 		'create_tag',
 		{
 			title: 'Create Tag',
@@ -198,7 +198,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 		},
 	)
 
-	agent.mcp.registerTool(
+	agent.server.registerTool(
 		'get_tag',
 		{
 			title: 'Get Tag',
@@ -221,7 +221,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 		},
 	)
 
-	agent.mcp.registerTool(
+	agent.server.registerTool(
 		'list_tags',
 		{
 			title: 'List Tags',
@@ -247,7 +247,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 		},
 	)
 
-	agent.mcp.registerTool(
+	agent.server.registerTool(
 		'update_tag',
 		{
 			title: 'Update Tag',
@@ -276,7 +276,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 		},
 	)
 
-	agent.mcp.registerTool(
+	agent.server.registerTool(
 		'delete_tag',
 		{
 			title: 'Delete Tag',
@@ -293,7 +293,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 			invariant(existingTag, `Tag ID "${id}" not found`)
 
 			// 🐨 first check whether the client has the elicitInput capability, if it does then:
-			// 🐨 Use agent.mcp.server.elicitInput to ask the user to confirm deletion of the tag.
+			// 🐨 Use agent.server.server.elicitInput to ask the user to confirm deletion of the tag.
 			//    - The message should be: `Are you sure you want to delete tag "${existingTag.name}" (ID: ${id})?`
 			//    - The requestedSchema should be an object with a boolean property "confirmed".
 			// 🐨 If the user does not confirm, return structuredContent with success: false and the tag.
@@ -314,7 +314,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 		},
 	)
 
-	agent.mcp.registerTool(
+	agent.server.registerTool(
 		'add_tag_to_entry',
 		{
 			title: 'Add Tag to Entry',
@@ -351,7 +351,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 		},
 	)
 
-	agent.mcp.registerTool(
+	agent.server.registerTool(
 		'create_wrapped_video',
 		{
 			title: 'Create Wrapped Video',

@@ -16,26 +16,29 @@ import {
 
 const petSubscriptions = new Set<string>()
 
-// NOTE: the mcp.server is how the MCP SDK exposes the underlying server
+// NOTE: the server.server is how the MCP SDK exposes the underlying server
 // instance for more advanced APIs like this one.
 
 // Allow clients to subscribe to updates for a specific pet
-mcp.server.setRequestHandler(SubscribeRequestSchema, async ({ params }) => {
+server.server.setRequestHandler(SubscribeRequestSchema, async ({ params }) => {
 	petSubscriptions.add(params.uri)
 	return {} // no specific response data is needed
 })
 
 // Allow clients to unsubscribe from updates
-mcp.server.setRequestHandler(UnsubscribeRequestSchema, async ({ params }) => {
-	petSubscriptions.delete(params.uri)
-	return {} // no specific response data is needed
-})
+server.server.setRequestHandler(
+	UnsubscribeRequestSchema,
+	async ({ params }) => {
+		petSubscriptions.delete(params.uri)
+		return {} // no specific response data is needed
+	},
+)
 
 // When a pet's status changes, notify subscribed clients
 function onPetStatusChange(petId: string, newStatus: string) {
 	const uri = `pethotel://pets/${petId}`
 	if (petSubscriptions.has(uri)) {
-		mcp.server.notification({
+		server.server.notification({
 			method: 'notifications/resources/updated',
 			params: { uri, title: `Pet ${petId} status updated to ${newStatus}` },
 		})
