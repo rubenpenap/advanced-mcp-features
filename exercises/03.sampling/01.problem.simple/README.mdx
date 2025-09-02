@@ -85,18 +85,8 @@ void agent.server.server.sendLoggingMessage({
 Check the specification for more info:
 https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/logging#log-message-notifications
 
-To be able to send a logging message, you need to first advertise that we support logging and add support for the `SetLevelRequestSchema` request. You'll do this in <InlineFile file="./src/index.ts" />. As a general reminder, here's how you add request handlers:
-
-```ts
-// this.server.server to access the underlying server instance
-this.server.server.setRequestHandler(
-	RequestSchema, // this is the request schema you're adding support for
-	async (request) => {
-		// do something with the request
-		return // return the appropriate response
-	},
-)
-```
+The SDK handles keeping track of the logging level and only sending messages if
+they are within the set logging level.
 
 ---
 

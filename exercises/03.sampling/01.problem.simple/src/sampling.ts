@@ -13,6 +13,5 @@ export async function suggestTagsSampling(agent: EpicMeMCP, entryId: number) {
 	// 🐨 logging message to send the model response to the client
 	// 📜 https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/logging#log-message-notifications
 	// 💰 agent.server.server.sendLoggingMessage (with level of 'info', logger of 'sampling', and data with the model response)
-	// 💰 only send the logging message if the agent.state.loggingLevel is 'debug' or 'info'
-	// 🦉 This is kind of annoying, and hopefully can be managed by the SDK in the future: https://github.com/modelcontextprotocol/typescript-sdk/issues/871
+	// 🦉 The SDK will make sure to only send messages if the logging level is 'debug' or 'info'
 }

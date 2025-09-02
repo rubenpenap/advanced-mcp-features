@@ -1,6 +1,5 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
-import { SetLevelRequestSchema } from '@modelcontextprotocol/sdk/types.js'
 import { DB } from './db/index.ts'
 import { initializePrompts } from './prompts.ts'
 import { initializeResources } from './resources.ts'
@@ -40,13 +39,6 @@ You can also help users add tags to their entries and get all tags for an entry.
 		this.db = DB.getInstance(path)
 	}
 	async init() {
-		this.server.server.setRequestHandler(
-			SetLevelRequestSchema,
-			async (request) => {
-				this.state.loggingLevel = request.params.level
-				return {}
-			},
-		)
 		await initializeTools(this)
 		await initializeResources(this)
 		await initializePrompts(this)
