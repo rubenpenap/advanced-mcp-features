@@ -9,7 +9,6 @@ import { initializeTools } from './tools.ts'
 
 export class EpicMeMCP {
 	db: DB
-	state = { loggingLevel: 'info' }
 	server = new McpServer(
 		{
 			name: 'epicme',
