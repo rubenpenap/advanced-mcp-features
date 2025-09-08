@@ -27,7 +27,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 			annotations: {
 				destructiveHint: false,
 				openWorldHint: false,
-			},
+			} satisfies ToolAnnotations,
 			inputSchema: createEntryInputSchema,
 			outputSchema: { entry: entryWithTagsSchema },
 		},
@@ -66,7 +66,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 			annotations: {
 				readOnlyHint: true,
 				openWorldHint: false,
-			},
+			} satisfies ToolAnnotations,
 			inputSchema: entryIdSchema,
 			outputSchema: { entry: entryWithTagsSchema },
 		},
@@ -92,7 +92,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 			annotations: {
 				readOnlyHint: true,
 				openWorldHint: false,
-			},
+			} satisfies ToolAnnotations,
 			outputSchema: { entries: z.array(entrySchema) },
 		},
 		async () => {
@@ -120,7 +120,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 				destructiveHint: false,
 				idempotentHint: true,
 				openWorldHint: false,
-			},
+			} satisfies ToolAnnotations,
 			inputSchema: updateEntryInputSchema,
 			outputSchema: { entry: entryWithTagsSchema },
 		},
@@ -148,9 +148,8 @@ export async function initializeTools(agent: EpicMeMCP) {
 			title: 'Delete Entry',
 			description: 'Delete a journal entry',
 			annotations: {
-				idempotentHint: true,
 				openWorldHint: false,
-			},
+			} satisfies ToolAnnotations,
 			inputSchema: entryIdSchema,
 			outputSchema: { success: z.boolean(), entry: entryWithTagsSchema },
 		},
@@ -201,7 +200,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 			annotations: {
 				destructiveHint: false,
 				openWorldHint: false,
-			},
+			} satisfies ToolAnnotations,
 			inputSchema: createTagInputSchema,
 			outputSchema: { tag: tagSchema },
 		},
@@ -229,7 +228,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 			annotations: {
 				readOnlyHint: true,
 				openWorldHint: false,
-			},
+			} satisfies ToolAnnotations,
 			inputSchema: tagIdSchema,
 			outputSchema: { tag: tagSchema },
 		},
@@ -252,7 +251,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 			annotations: {
 				readOnlyHint: true,
 				openWorldHint: false,
-			},
+			} satisfies ToolAnnotations,
 			outputSchema: { tags: z.array(tagSchema) },
 		},
 		async () => {
@@ -279,7 +278,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 				destructiveHint: false,
 				idempotentHint: true,
 				openWorldHint: false,
-			},
+			} satisfies ToolAnnotations,
 			inputSchema: updateTagInputSchema,
 			outputSchema: { tag: tagSchema },
 		},
@@ -305,9 +304,8 @@ export async function initializeTools(agent: EpicMeMCP) {
 			title: 'Delete Tag',
 			description: 'Delete a tag',
 			annotations: {
-				idempotentHint: true,
 				openWorldHint: false,
-			},
+			} satisfies ToolAnnotations,
 			inputSchema: tagIdSchema,
 			outputSchema: { success: z.boolean(), tag: tagSchema },
 		},
@@ -357,7 +355,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 				destructiveHint: false,
 				idempotentHint: true,
 				openWorldHint: false,
-			},
+			} satisfies ToolAnnotations,
 			inputSchema: entryTagIdSchema,
 			outputSchema: { success: z.boolean(), entryTag: entryTagSchema },
 		},
@@ -394,7 +392,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 			annotations: {
 				destructiveHint: false,
 				openWorldHint: false,
-			},
+			} satisfies ToolAnnotations,
 			inputSchema: {
 				year: z
 					.number()
