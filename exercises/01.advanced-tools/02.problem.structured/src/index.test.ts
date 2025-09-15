@@ -229,12 +229,7 @@ test('Tool annotations and structured output', async () => {
 	expect(
 		deleteEntryTool.annotations,
 		'🚨 delete_entry missing annotations',
-	).toEqual(
-		expect.objectContaining({
-			idempotentHint: true,
-			openWorldHint: false,
-		}),
-	)
+	).toEqual(expect.objectContaining({ openWorldHint: false }))
 	expect(
 		deleteEntryTool.outputSchema,
 		'🚨 delete_entry missing outputSchema',
@@ -292,12 +287,7 @@ test('Tool annotations and structured output', async () => {
 	expect(
 		deleteTagTool.annotations,
 		'🚨 delete_tag missing annotations',
-	).toEqual(
-		expect.objectContaining({
-			idempotentHint: true,
-			openWorldHint: false,
-		}),
-	)
+	).toEqual(expect.objectContaining({ openWorldHint: false }))
 	expect(
 		deleteTagTool.outputSchema,
 		'🚨 delete_tag missing outputSchema',

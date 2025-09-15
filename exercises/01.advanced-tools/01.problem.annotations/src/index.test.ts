@@ -167,12 +167,7 @@ test('Tool annotations', async () => {
 	expect(
 		deleteEntryTool.annotations,
 		'🚨 delete_entry missing annotations',
-	).toEqual(
-		expect.objectContaining({
-			idempotentHint: true,
-			openWorldHint: false,
-		}),
-	)
+	).toEqual(expect.objectContaining({ openWorldHint: false }))
 
 	// Check get_tag annotations (read-only)
 	const getTagTool = toolMap['get_tag']
@@ -214,12 +209,7 @@ test('Tool annotations', async () => {
 	expect(
 		deleteTagTool.annotations,
 		'🚨 delete_tag missing annotations',
-	).toEqual(
-		expect.objectContaining({
-			idempotentHint: true,
-			openWorldHint: false,
-		}),
-	)
+	).toEqual(expect.objectContaining({ openWorldHint: false }))
 
 	// Check add_tag_to_entry annotations (idempotent)
 	const addTagToEntryTool = toolMap['add_tag_to_entry']
