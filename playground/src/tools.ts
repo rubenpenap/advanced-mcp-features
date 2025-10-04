@@ -408,7 +408,10 @@ export async function initializeTools(agent: EpicMeMCP) {
 			},
 			outputSchema: { videoUri: z.string().describe('The URI of the video') },
 		},
-		async ({ year = new Date().getFullYear(), mockTime }) => {
+		async (
+			{ year = new Date().getFullYear(), mockTime },
+			// 🐨 you'll need to use sendNotification and _meta for progress reporting
+		) => {
 			const entries = await agent.db.getEntries()
 			const filteredEntries = entries.filter(
 				(entry) => new Date(entry.createdAt * 1000).getFullYear() === year,
@@ -422,6 +425,11 @@ export async function initializeTools(agent: EpicMeMCP) {
 				tags: filteredTags,
 				year,
 				mockTime,
+				// 🐨 pass an onProgress callback here that reports progress to the user
+				// using sendNotification and the progressToken from _meta. In your
+				// onProgress callback, call sendNotification with the method of
+				// 'notifications/progress' and params that include the progressToken
+				// from _meta, the progress, total: 1, and message: 'Creating video...'
 			})
 			const structuredContent = { videoUri }
 			return {

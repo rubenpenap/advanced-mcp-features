@@ -37,15 +37,13 @@ If you have no suggestions, respond with an empty array:
 
 If you have some suggestions, respond with an array of tag objects. Existing tags have an "id" property, new tags have a "name" and "description" property:
 [{"id": 1}, {"name": "New Tag", "description": "The description of the new tag"}, {"id": 24}]
-
-We'll put more in here later...
-		`.trim(),
+			`.trim(),
 		messages: [
 			{
 				role: 'user',
 				content: {
 					type: 'text',
-					mimeType: 'text/json',
+					mimeType: 'application/json',
 					text: JSON.stringify({ entry, currentTags, existingTags }),
 				},
 			},

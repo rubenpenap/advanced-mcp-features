@@ -1,115 +1,69 @@
-# Advanced Sampling Prompt
+# Progress Updates
 
-<EpicVideo url="https://www.epicai.pro/workshops/day-3-4-advanced-mcp-features/advanced-sampling-prompt~qyf7c" />
+<EpicVideo url="https://www.epicai.pro/workshops/day-3-4-advanced-mcp-features/progress-updates~a3g0l" />
 
-👨‍💼 Now that you've wired up basic sampling, it's time to make your prompt
-have the LLM do something actually useful! Instead of just asking for a generic
-response, you'll craft a prompt that enables the model to suggest relevant tags
-for a new journal entry.
+👨‍💼 When users ask our mcp server to generate their journal wrapped video, it can take some time and they want to know that things are moving along. Nobody likes staring at a blank screen, wondering if the app is frozen or if their request was even received. Progress updates are how we keep users in the loop, making the wait feel shorter and the experience more delightful.
 
-**Here's what you'll do:**
+Here's an example of how to perform progress updates in your MCP server:
 
-- Update your sampling request to provide the LLM with structured information:
-  the new journal entry, its current tags, and all existing tags in the system.
-- Change the user message to send this data as JSON (`application/json`), not
-  plain text.
-- Write a clear, detailed system prompt that instructs the LLM to make a list of
-  suggested tags that are relevant to the entry and not already applied. Make
-  certain it's instructed on the format of the response.
-- Increase the `maxTokens` to allow for a longer, more detailed response.
-- Test and iterate on your prompt! Try pasting the example JSON into your
-  favorite LLM playground and see how it responds. Refine your instructions
-  until you get the output you want.
-
-<details>
-<summary>Development workflow</summary>
-
-🦉 You can use the JSON below to test your prompt:
-
-1. Write your prompt into the LLM chat
-2. Let it respond (It'll probably ask you to provide the JSON)
-3. Paste the JSON below into the chat and let it respond again
-4. Evaluate the response (make sure it's in the right format)
-5. Repeat in new chats until you're happy with the prompt/response
-
-```json filename=example-user-message.json
-{
-	"entry": {
-		"id": 6,
-		"title": "Day at the Beach with Family",
-		"content": "Spent the whole day at the beach with the family and it couldn't have been better. The kids were totally absorbed in building a massive sandcastle—complete with towers, moats, and even a seaweed flag. We played catch, flew a kite, and waded into the water until our fingers turned into prunes. Rebecca and I went on a shell hunt and found a few keepers. Lunch was sandy PB&Js and watermelon under a big striped umbrella. We stayed until sunset, which painted the sky with ridiculous pinks and oranges. Everyone was sun-tired and happy. Grateful for days like this.",
-		"mood": "grateful",
-		"location": "beach",
-		"weather": "sunny",
-		"isPrivate": 0,
-		"isFavorite": 1,
-		"createdAt": 1746668878,
-		"updatedAt": 1746668878,
-		"tags": [{ "id": 1, "name": "Family" }]
+```ts
+agent.server.registerTool(
+	'make_sandwich',
+	{
+		description: 'Make a sandwich',
+		inputSchema: {
+			ingredients: z.array(z.string()),
+		},
 	},
-	"currentTags": [
-		{
-			"id": 1,
-			"name": "Family",
-			"description": "Spending time with family members",
-			"createdAt": 1746666966,
-			"updatedAt": 1746666966
-		}
-	],
-	"existingTags": [
-		{
-			"id": 1,
-			"name": "Family",
-			"description": "Spending time with family members",
-			"createdAt": 1746666966,
-			"updatedAt": 1746666966
-		},
-		{
-			"id": 2,
-			"name": "Outdoors",
-			"description": "Entries about being outside in nature or open spaces",
-			"createdAt": 1746667900,
-			"updatedAt": 1746667900
-		},
-		{
-			"id": 3,
-			"name": "Exercise",
-			"description": "Physical activity or movement",
-			"createdAt": 1746668000,
-			"updatedAt": 1746668000
-		},
-		{
-			"id": 4,
-			"name": "Food",
-			"description": "Eating, meals, or anything food-related",
-			"createdAt": 1746668001,
-			"updatedAt": 1746668001
-		}
-	]
-}
+	async ({ ingredients }, { sendNotification, _meta }) => {
+		// ...
+		const orderStatus = await assembleSandwichOrder({
+			ingredients,
+			onProgress: (progress) => {
+				const { progressToken } = _meta ?? {}
+				if (!progressToken) return
+				void sendNotification({
+					method: 'notifications/progress',
+					params: {
+						progressToken,
+						progress,
+						total: 1,
+						message: `Stacking pickles...`,
+					},
+				})
+			},
+		})
+	},
+	// ...
+)
 ```
 
-</details>
+<callout-success>
+	Progress updates can be as simple as a percentage, or as fun as a custom
+	message. The key is to keep users informed while they wait.
+</callout-success>
 
-This step will help you practice prompt engineering for structured outputs, and
-show you how to use the full power of MCP's sampling API for real-world tasks.
-
-There are tests to help verify your sampling request is working.
-
-To test this in the MCP inspector:
-
-- run the `create_entry` tool
-- check the "Sampling" navigation tab and you should have a sampling request
-- at this point, YOU are the LLM. You can copy paste this into your response:
-
-```json filename=example-sampling-client-response.json
-{
-	"model": "stub-model",
-	"stopReason": "endTurn",
-	"role": "assistant",
-	"content": {
-		"type": "text",
-		"text": "[{\"id\":2},{\"id\":4},{\"name\":\"Beach\",\"description\":\"Activities or experiences at the beach, including sand, water, and seaside fun\"}]"
-	}
-}
+```mermaid
+sequenceDiagram
+  User->>App: Place custom sandwich order (with progressToken)
+  loop While processing
+    App-->>User: notifications/progress (progress, total, message)
+  end
+  App-->>User: Sandwich ready!
 ```
+
+<callout-muted>
+	📜 For more details on how to implement progress notifications, see the [MCP
+	Progress
+	Documentation](https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/progress).
+</callout-muted>
+
+The goal is to make waiting feel like part of the experience, not a chore. Progress updates turn a long-running task into a journey the user can follow, one delicious layer at a time.
+
+Test this one out in the MCP inspector by using the `create_wrapped_video` tool.
+
+<callout-info>
+	**NOTE**: This particular tool requires ffmpeg to be installed globally on
+	your machine. If it is not, you can still test this out using the mock time
+	input (you just won't get the video actually generated).
+</callout-info>
