@@ -5,13 +5,14 @@ import {
 	createEntryInputSchema,
 	createTagInputSchema,
 	entryIdSchema,
+	entrySchema,
 	entryTagIdSchema,
-	tagIdSchema,
-	updateEntryInputSchema,
-	updateTagInputSchema,
 	entryTagSchema,
 	entryWithTagsSchema,
+	tagIdSchema,
 	tagSchema,
+	updateEntryInputSchema,
+	updateTagInputSchema,
 } from './db/schema.ts'
 import { type EpicMeMCP } from './index.ts'
 import { createWrappedVideo } from './video.ts'
@@ -40,10 +41,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 				}
 			}
 
-			const entryWithTags = await agent.db.getEntry(createdEntry.id)
-			invariant(entryWithTags, `Failed to refetch created entry`)
-
-			const structuredContent = { entry: entryWithTags }
+			const structuredContent = { entry: createdEntry }
 			return {
 				structuredContent,
 				content: [
@@ -92,7 +90,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 				readOnlyHint: true,
 				openWorldHint: false,
 			} satisfies ToolAnnotations,
-			outputSchema: { entries: z.array(entryWithTagsSchema) },
+			outputSchema: { entries: z.array(entrySchema) },
 		},
 		async () => {
 			const entries = await agent.db.getEntries()
@@ -217,11 +215,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 			const structuredContent = { tag }
 			return {
 				structuredContent,
-				content: [
-					createText(tag),
-					createTagResourceLink(tag),
-					createText(structuredContent),
-				],
+				content: [createTagResourceLink(tag), createText(structuredContent)],
 			}
 		},
 	)
@@ -295,6 +289,14 @@ export async function initializeTools(agent: EpicMeMCP) {
 		async ({ id }) => {
 			const existingTag = await agent.db.getTag(id)
 			invariant(existingTag, `Tag ID "${id}" not found`)
+
+			// 🐨 first check whether the client has the elicitation capability, if it does then:
+			// 🐨 Use agent.server.server.elicitInput to ask the user to confirm deletion of the tag.
+			//    - The message should be: `Are you sure you want to delete tag "${existingTag.name}" (ID: ${id})?`
+			//    - The requestedSchema should be an object with a boolean property "confirmed".
+			// 🐨 If the user does not confirm, return structuredContent with success: false and the tag.
+			//    - Also return content with a text block saying `Deleting tag "${existingTag.name}" (ID: ${id}) rejected by the user.`, the tag resource link, and the structuredContent.
+
 			await agent.db.deleteTag(id)
 			const structuredContent = { success: true, tag: existingTag }
 			return {
@@ -371,7 +373,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 						'If set to > 0, use mock mode and this is the mock wait time in milliseconds',
 					),
 			},
-			outputSchema: { videoUri: z.string() },
+			outputSchema: { videoUri: z.string().describe('The URI of the video') },
 		},
 		async ({ year = new Date().getFullYear(), mockTime }) => {
 			const entries = await agent.db.getEntries()
