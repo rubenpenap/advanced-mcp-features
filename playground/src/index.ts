@@ -18,7 +18,7 @@ export class EpicMeMCP {
 				tools: {},
 				resources: {},
 				completions: {},
-				// 🐨 add the `logging` capability to the `capabilities` object
+				logging: {},
 				prompts: {},
 			},
 			instructions: `
