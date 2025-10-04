@@ -71,7 +71,7 @@ test('Tool Definition', async () => {
 	)
 })
 
-test('Tool annotations', async () => {
+test('Tool annotations and structured output', async () => {
 	await using setup = await setupClient()
 	const { client } = setup
 
@@ -92,6 +92,24 @@ test('Tool annotations', async () => {
 		}),
 	)
 
+	// Check create_entry outputSchema
+	expect(
+		createEntryTool.outputSchema,
+		'🚨 create_entry missing outputSchema',
+	).toBeDefined()
+	expect(
+		createEntryTool.outputSchema,
+		'🚨 create_entry outputSchema should be an object with entry property',
+	).toEqual(
+		expect.objectContaining({
+			type: 'object',
+			properties: expect.objectContaining({
+				entry: expect.any(Object),
+			}),
+			required: expect.arrayContaining(['entry']),
+		}),
+	)
+
 	// Check create_tag annotations
 	const createTagTool = toolMap['create_tag']
 	invariant(createTagTool, '🚨 create_tag tool not found')
@@ -105,7 +123,25 @@ test('Tool annotations', async () => {
 		}),
 	)
 
-	// Create a tag and entry to enable other tools
+	// Check create_tag outputSchema
+	expect(
+		createTagTool.outputSchema,
+		'🚨 create_tag missing outputSchema',
+	).toBeDefined()
+	expect(
+		createTagTool.outputSchema,
+		'🚨 create_tag outputSchema should be an object with tag property',
+	).toEqual(
+		expect.objectContaining({
+			type: 'object',
+			properties: expect.objectContaining({
+				tag: expect.any(Object),
+			}),
+			required: expect.arrayContaining(['tag']),
+		}),
+	)
+
+	// Create a tag and entry for further tool calls
 	const tagResult = await client.callTool({
 		name: 'create_tag',
 		arguments: {
@@ -113,6 +149,13 @@ test('Tool annotations', async () => {
 			description: 'A tag for testing',
 		},
 	})
+	expect(
+		tagResult.structuredContent,
+		'🚨 tagResult.structuredContent should be defined',
+	).toBeDefined()
+	const tag = (tagResult.structuredContent as any).tag
+	invariant(tag, '🚨 No tag resource found')
+	invariant(tag.id, '🚨 No tag ID found')
 
 	const entryResult = await client.callTool({
 		name: 'create_entry',
@@ -121,12 +164,19 @@ test('Tool annotations', async () => {
 			content: 'This is a test entry',
 		},
 	})
+	expect(
+		entryResult.structuredContent,
+		'🚨 entryResult.structuredContent should be defined',
+	).toBeDefined()
+	const entry = (entryResult.structuredContent as any).entry
+	invariant(entry, '🚨 No entry resource found')
+	invariant(entry.id, '🚨 No entry ID found')
 
 	// List tools again now that entry and tag exist
 	list = await client.listTools()
 	toolMap = Object.fromEntries(list.tools.map((t) => [t.name, t]))
 
-	// Check get_entry annotations (read-only)
+	// Check get_entry annotations and outputSchema
 	const getEntryTool = toolMap['get_entry']
 	invariant(getEntryTool, '🚨 get_entry tool not found')
 	expect(getEntryTool.annotations, '🚨 get_entry missing annotations').toEqual(
@@ -135,8 +185,12 @@ test('Tool annotations', async () => {
 			openWorldHint: false,
 		}),
 	)
+	expect(
+		getEntryTool.outputSchema,
+		'🚨 get_entry missing outputSchema',
+	).toBeDefined()
 
-	// Check list_entries annotations (read-only)
+	// Check list_entries annotations and outputSchema
 	const listEntriesTool = toolMap['list_entries']
 	invariant(listEntriesTool, '🚨 list_entries tool not found')
 	expect(
@@ -148,8 +202,12 @@ test('Tool annotations', async () => {
 			openWorldHint: false,
 		}),
 	)
+	expect(
+		listEntriesTool.outputSchema,
+		'🚨 list_entries missing outputSchema',
+	).toBeDefined()
 
-	// Check update_entry annotations (idempotent)
+	// Check update_entry annotations and outputSchema
 	const updateEntryTool = toolMap['update_entry']
 	invariant(updateEntryTool, '🚨 update_entry tool not found')
 	expect(
@@ -162,16 +220,24 @@ test('Tool annotations', async () => {
 			openWorldHint: false,
 		}),
 	)
+	expect(
+		updateEntryTool.outputSchema,
+		'🚨 update_entry missing outputSchema',
+	).toBeDefined()
 
-	// Check delete_entry annotations (idempotent)
+	// Check delete_entry annotations and outputSchema
 	const deleteEntryTool = toolMap['delete_entry']
 	invariant(deleteEntryTool, '🚨 delete_entry tool not found')
 	expect(
 		deleteEntryTool.annotations,
 		'🚨 delete_entry missing annotations',
 	).toEqual(expect.objectContaining({ openWorldHint: false }))
+	expect(
+		deleteEntryTool.outputSchema,
+		'🚨 delete_entry missing outputSchema',
+	).toBeDefined()
 
-	// Check get_tag annotations (read-only)
+	// Check get_tag annotations and outputSchema
 	const getTagTool = toolMap['get_tag']
 	invariant(getTagTool, '🚨 get_tag tool not found')
 	expect(getTagTool.annotations, '🚨 get_tag missing annotations').toEqual(
@@ -180,8 +246,12 @@ test('Tool annotations', async () => {
 			openWorldHint: false,
 		}),
 	)
+	expect(
+		getTagTool.outputSchema,
+		'🚨 get_tag missing outputSchema',
+	).toBeDefined()
 
-	// Check list_tags annotations (read-only)
+	// Check list_tags annotations and outputSchema
 	const listTagsTool = toolMap['list_tags']
 	invariant(listTagsTool, '🚨 list_tags tool not found')
 	expect(listTagsTool.annotations, '🚨 list_tags missing annotations').toEqual(
@@ -190,8 +260,12 @@ test('Tool annotations', async () => {
 			openWorldHint: false,
 		}),
 	)
+	expect(
+		listTagsTool.outputSchema,
+		'🚨 list_tags missing outputSchema',
+	).toBeDefined()
 
-	// Check update_tag annotations (idempotent)
+	// Check update_tag annotations and outputSchema
 	const updateTagTool = toolMap['update_tag']
 	invariant(updateTagTool, '🚨 update_tag tool not found')
 	expect(
@@ -204,16 +278,24 @@ test('Tool annotations', async () => {
 			openWorldHint: false,
 		}),
 	)
+	expect(
+		updateTagTool.outputSchema,
+		'🚨 update_tag missing outputSchema',
+	).toBeDefined()
 
-	// Check delete_tag annotations (idempotent)
+	// Check delete_tag annotations and outputSchema
 	const deleteTagTool = toolMap['delete_tag']
 	invariant(deleteTagTool, '🚨 delete_tag tool not found')
 	expect(
 		deleteTagTool.annotations,
 		'🚨 delete_tag missing annotations',
 	).toEqual(expect.objectContaining({ openWorldHint: false }))
+	expect(
+		deleteTagTool.outputSchema,
+		'🚨 delete_tag missing outputSchema',
+	).toBeDefined()
 
-	// Check add_tag_to_entry annotations (idempotent)
+	// Check add_tag_to_entry annotations and outputSchema
 	const addTagToEntryTool = toolMap['add_tag_to_entry']
 	invariant(addTagToEntryTool, '🚨 add_tag_to_entry tool not found')
 	expect(
@@ -226,8 +308,12 @@ test('Tool annotations', async () => {
 			openWorldHint: false,
 		}),
 	)
+	expect(
+		addTagToEntryTool.outputSchema,
+		'🚨 add_tag_to_entry missing outputSchema',
+	).toBeDefined()
 
-	// Check create_wrapped_video annotations
+	// Check create_wrapped_video annotations and outputSchema
 	const createWrappedVideoTool = toolMap['create_wrapped_video']
 	invariant(createWrappedVideoTool, '🚨 create_wrapped_video tool not found')
 	expect(
@@ -239,49 +325,91 @@ test('Tool annotations', async () => {
 			openWorldHint: false,
 		}),
 	)
-})
+	expect(
+		createWrappedVideoTool.outputSchema,
+		'🚨 create_wrapped_video missing outputSchema',
+	).toBeDefined()
 
-test('Basic tool functionality', async () => {
-	await using setup = await setupClient()
-	const { client } = setup
+	// Test structured content in responses
 
-	// Test create_entry
-	const entryResult = await client.callTool({
-		name: 'create_entry',
-		arguments: {
-			title: 'Test Entry',
-			content: 'This is a test entry',
-		},
+	// get_entry structuredContent
+	const getEntryResult = await client.callTool({
+		name: 'get_entry',
+		arguments: { id: entry.id },
 	})
-	expect(entryResult.content).toBeDefined()
-	expect(Array.isArray(entryResult.content)).toBe(true)
-	expect((entryResult.content as any[]).length).toBeGreaterThan(0)
+	const getEntryContent = (getEntryResult.structuredContent as any).entry
+	invariant(getEntryContent, '🚨 get_entry missing entry in structuredContent')
+	expect(getEntryContent.id, '🚨 get_entry structuredContent.id mismatch').toBe(
+		entry.id,
+	)
 
-	// Test create_tag
-	const tagResult = await client.callTool({
-		name: 'create_tag',
-		arguments: {
-			name: 'TestTag',
-			description: 'A tag for testing',
-		},
+	// get_tag structuredContent
+	const getTagResult = await client.callTool({
+		name: 'get_tag',
+		arguments: { id: tag.id },
 	})
-	expect(tagResult.content).toBeDefined()
-	expect(Array.isArray(tagResult.content)).toBe(true)
-	expect((tagResult.content as any[]).length).toBeGreaterThan(0)
+	const getTagContent = (getTagResult.structuredContent as any).tag
+	invariant(getTagContent, '🚨 get_tag missing tag in structuredContent')
+	expect(getTagContent.id, '🚨 get_tag structuredContent.id mismatch').toBe(
+		tag.id,
+	)
 
-	// Test basic CRUD operations work
-	const list = await client.listTools()
-	const toolNames = list.tools.map((t) => t.name)
-	expect(toolNames).toContain('create_entry')
-	expect(toolNames).toContain('create_tag')
-	expect(toolNames).toContain('get_entry')
-	expect(toolNames).toContain('get_tag')
-	expect(toolNames).toContain('list_entries')
-	expect(toolNames).toContain('list_tags')
-	expect(toolNames).toContain('update_entry')
-	expect(toolNames).toContain('update_tag')
-	expect(toolNames).toContain('delete_entry')
-	expect(toolNames).toContain('delete_tag')
-	expect(toolNames).toContain('add_tag_to_entry')
-	expect(toolNames).toContain('create_wrapped_video')
+	// update_entry structuredContent
+	const updateEntryResult = await client.callTool({
+		name: 'update_entry',
+		arguments: { id: entry.id, title: 'Updated Entry' },
+	})
+	const updateEntryContent = (updateEntryResult.structuredContent as any).entry
+	invariant(
+		updateEntryContent,
+		'🚨 update_entry missing entry in structuredContent',
+	)
+	expect(
+		updateEntryContent.title,
+		'🚨 update_entry structuredContent.title mismatch',
+	).toBe('Updated Entry')
+
+	// update_tag structuredContent
+	const updateTagResult = await client.callTool({
+		name: 'update_tag',
+		arguments: { id: tag.id, name: 'UpdatedTag' },
+	})
+	const updateTagContent = (updateTagResult.structuredContent as any).tag
+	invariant(updateTagContent, '🚨 update_tag missing tag in structuredContent')
+	expect(
+		updateTagContent.name,
+		'🚨 update_tag structuredContent.name mismatch',
+	).toBe('UpdatedTag')
+
+	// delete_entry structuredContent
+	const deleteEntryResult = await client.callTool({
+		name: 'delete_entry',
+		arguments: { id: entry.id },
+	})
+	const deleteEntryContent = deleteEntryResult.structuredContent as any
+	invariant(deleteEntryContent, '🚨 delete_entry missing structuredContent')
+	expect(
+		deleteEntryContent.success,
+		'🚨 delete_entry structuredContent.success should be true',
+	).toBe(true)
+	expect(
+		deleteEntryContent.entry.id,
+		'🚨 delete_entry structuredContent.entry.id mismatch',
+	).toBe(entry.id)
+
+	// delete_tag structuredContent
+	const deleteTagResult = await client.callTool({
+		name: 'delete_tag',
+		arguments: { id: tag.id },
+	})
+	const deleteTagContent = deleteTagResult.structuredContent as any
+	invariant(deleteTagContent, '🚨 delete_tag missing structuredContent')
+	expect(
+		deleteTagContent.success,
+		'🚨 delete_tag structuredContent.success should be true',
+	).toBe(true)
+	expect(
+		deleteTagContent.tag.id,
+		'🚨 delete_tag structuredContent.tag.id mismatch',
+	).toBe(tag.id)
 })

@@ -9,25 +9,13 @@ import {
 	tagIdSchema,
 	updateEntryInputSchema,
 	updateTagInputSchema,
+	// 💰 you'll need these:
+	// entryTagSchema,
+	// entryWithTagsSchema,
+	// tagSchema,
 } from './db/schema.ts'
 import { type EpicMeMCP } from './index.ts'
 import { createWrappedVideo } from './video.ts'
-
-// 🧝‍♀️ Because the tool annotations defaults and values are confusing, I'm giving
-// this to you to help you use them correctly!
-type ToolAnnotations = {
-	// defaults to true, so only allow false
-	openWorldHint?: false
-} & (
-	| {
-			// when readOnlyHint is true, none of the other annotations can be changed
-			readOnlyHint: true
-	  }
-	| {
-			destructiveHint?: false // Only allow false (default is true)
-			idempotentHint?: true // Only allow true (default is false)
-	  }
-)
 
 export async function initializeTools(agent: EpicMeMCP) {
 	agent.server.registerTool(
@@ -35,12 +23,12 @@ export async function initializeTools(agent: EpicMeMCP) {
 		{
 			title: 'Create Entry',
 			description: 'Create a new journal entry',
-			inputSchema: createEntryInputSchema,
-
 			annotations: {
-				openWorldHint: false,
 				destructiveHint: false,
+				openWorldHint: false,
 			} satisfies ToolAnnotations,
+			inputSchema: createEntryInputSchema,
+			// 🐨 add an outputSchema here with an entry that is an entryWithTagsSchema
 		},
 		async (entry) => {
 			const createdEntry = await agent.db.createEntry(entry)
@@ -53,12 +41,23 @@ export async function initializeTools(agent: EpicMeMCP) {
 				}
 			}
 
+			// 🐨 refetch entry to get updated tags
+			// 💰 agent.db.getEntry(createdEntry.id)
+			// 💯 add invariant to check if the entry was found
+
+			// 🐨 create a structuredContent here that matches the outputSchema
 			return {
+				// 🐨 add structuredContent here
 				content: [
 					createText(
 						`Entry "${createdEntry.title}" created successfully with ID "${createdEntry.id}"`,
 					),
+					// 🐨 reduce duplication by switching this to a resource link
+					// 💰 createEntryResourceLink(createdEntry),
 					createEntryEmbeddedResource(createdEntry),
+
+					// 🐨 add the structuredContent as a text block
+					// 💰 createText(structuredContent),
 				],
 			}
 		},
@@ -69,18 +68,24 @@ export async function initializeTools(agent: EpicMeMCP) {
 		{
 			title: 'Get Entry',
 			description: 'Get a journal entry by ID',
-
 			annotations: {
-				openWorldHint: false,
 				readOnlyHint: true,
+				openWorldHint: false,
 			} satisfies ToolAnnotations,
 			inputSchema: entryIdSchema,
+			// 🐨 add an outputSchema here with an entry that is an entrySchema
 		},
 		async ({ id }) => {
 			const entry = await agent.db.getEntry(id)
 			invariant(entry, `Entry with ID "${id}" not found`)
+			// 🐨 add a structuredContent here that matches the outputSchema
 			return {
-				content: [createEntryEmbeddedResource(entry)],
+				// 🐨 add structuredContent here
+				content: [
+					// 🐨 reduce duplication by switching this to a resource link
+					createEntryEmbeddedResource(entry),
+					// 🐨 add the structuredContent as a text block
+				],
 			}
 		},
 	)
@@ -90,19 +95,22 @@ export async function initializeTools(agent: EpicMeMCP) {
 		{
 			title: 'List Entries',
 			description: 'List all journal entries',
-
 			annotations: {
-				openWorldHint: false,
 				readOnlyHint: true,
+				openWorldHint: false,
 			} satisfies ToolAnnotations,
+			// 🐨 add an outputSchema here with entries that is an array of entrySchema
 		},
 		async () => {
 			const entries = await agent.db.getEntries()
 			const entryLinks = entries.map(createEntryResourceLink)
+			// 🐨 add a structuredContent here that matches the outputSchema
 			return {
+				// 🐨 add structuredContent here
 				content: [
 					createText(`Found ${entries.length} entries.`),
 					...entryLinks,
+					// 🐨 add the structuredContent as a text block
 				],
 			}
 		},
@@ -114,24 +122,28 @@ export async function initializeTools(agent: EpicMeMCP) {
 			title: 'Update Entry',
 			description:
 				'Update a journal entry. Fields that are not provided (or set to undefined) will not be updated. Fields that are set to null or any other value will be updated.',
-
 			annotations: {
 				destructiveHint: false,
-				openWorldHint: false,
 				idempotentHint: true,
+				openWorldHint: false,
 			} satisfies ToolAnnotations,
 			inputSchema: updateEntryInputSchema,
+			// 🐨 add an outputSchema here with an entry that is an entryWithTagsSchema
 		},
 		async ({ id, ...updates }) => {
 			const existingEntry = await agent.db.getEntry(id)
 			invariant(existingEntry, `Entry with ID "${id}" not found`)
 			const updatedEntry = await agent.db.updateEntry(id, updates)
+			// 🐨 add a structuredContent here that matches the outputSchema
 			return {
+				// 🐨 add structuredContent here
 				content: [
 					createText(
 						`Entry "${updatedEntry.title}" (ID: ${id}) updated successfully`,
 					),
+					// 🐨 reduce duplication by switching this to a resource link
 					createEntryEmbeddedResource(updatedEntry),
+					// 🐨 add the structuredContent as a text block
 				],
 			}
 		},
@@ -142,23 +154,27 @@ export async function initializeTools(agent: EpicMeMCP) {
 		{
 			title: 'Delete Entry',
 			description: 'Delete a journal entry',
-
 			annotations: {
 				openWorldHint: false,
 			} satisfies ToolAnnotations,
 			inputSchema: entryIdSchema,
+			// 🐨 add an outputSchema here with success (boolean) and entry (entryWithTagsSchema)
 		},
 		async ({ id }) => {
 			const existingEntry = await agent.db.getEntry(id)
 			invariant(existingEntry, `Entry with ID "${id}" not found`)
 			await agent.db.deleteEntry(id)
 
+			// 🐨 add a structuredContent here that matches the outputSchema
 			return {
+				// 🐨 add structuredContent here
 				content: [
 					createText(
 						`Entry "${existingEntry.title}" (ID: ${id}) deleted successfully`,
 					),
+					// 🐨 reduce duplication by switching this to a resource link
 					createEntryEmbeddedResource(existingEntry),
+					// 🐨 add the structuredContent as a text block
 				],
 			}
 		},
@@ -169,21 +185,25 @@ export async function initializeTools(agent: EpicMeMCP) {
 		{
 			title: 'Create Tag',
 			description: 'Create a new tag',
-
 			annotations: {
-				openWorldHint: false,
 				destructiveHint: false,
+				openWorldHint: false,
 			} satisfies ToolAnnotations,
 			inputSchema: createTagInputSchema,
+			// 🐨 add an outputSchema here with a tag that is a tagSchema
 		},
 		async (tag) => {
 			const createdTag = await agent.db.createTag(tag)
+			// 🐨 add a structuredContent here that matches the outputSchema
 			return {
+				// 🐨 add structuredContent here
 				content: [
 					createText(
 						`Tag "${createdTag.name}" created successfully with ID "${createdTag.id}"`,
 					),
+					// 🐨 reduce duplication by switching this to a resource link
 					createTagEmbeddedResource(createdTag),
+					// 🐨 add the structuredContent as a text block
 				],
 			}
 		},
@@ -194,18 +214,25 @@ export async function initializeTools(agent: EpicMeMCP) {
 		{
 			title: 'Get Tag',
 			description: 'Get a tag by ID',
-
 			annotations: {
 				readOnlyHint: true,
 				openWorldHint: false,
 			} satisfies ToolAnnotations,
 			inputSchema: tagIdSchema,
+			// 🐨 add an outputSchema here with a tag that is a tagSchema
 		},
 		async ({ id }) => {
 			const tag = await agent.db.getTag(id)
 			invariant(tag, `Tag ID "${id}" not found`)
+			// 🐨 add a structuredContent here that matches the outputSchema
 			return {
-				content: [createTagEmbeddedResource(tag)],
+				// 🐨 add structuredContent here
+				content: [
+					createText(tag),
+					// 🐨 reduce duplication by switching this to a resource link
+					createTagEmbeddedResource(tag),
+					// 🐨 add the structuredContent as a text block
+				],
 			}
 		},
 	)
@@ -215,17 +242,23 @@ export async function initializeTools(agent: EpicMeMCP) {
 		{
 			title: 'List Tags',
 			description: 'List all tags',
-
 			annotations: {
 				readOnlyHint: true,
 				openWorldHint: false,
 			} satisfies ToolAnnotations,
+			// 🐨 add an outputSchema here with tags that is an array of tagSchema
 		},
 		async () => {
 			const tags = await agent.db.getTags()
 			const tagLinks = tags.map(createTagResourceLink)
+			// 🐨 add a structuredContent here that matches the outputSchema
 			return {
-				content: [createText(`Found ${tags.length} tags.`), ...tagLinks],
+				// 🐨 add structuredContent here
+				content: [
+					createText(`Found ${tags.length} tags.`),
+					...tagLinks,
+					// 🐨 add the structuredContent as a text block
+				],
 			}
 		},
 	)
@@ -235,22 +268,26 @@ export async function initializeTools(agent: EpicMeMCP) {
 		{
 			title: 'Update Tag',
 			description: 'Update a tag',
-
 			annotations: {
 				destructiveHint: false,
 				idempotentHint: true,
 				openWorldHint: false,
 			} satisfies ToolAnnotations,
 			inputSchema: updateTagInputSchema,
+			// 🐨 add an outputSchema here with a tag that is a tagSchema
 		},
 		async ({ id, ...updates }) => {
 			const updatedTag = await agent.db.updateTag(id, updates)
+			// 🐨 add a structuredContent here that matches the outputSchema
 			return {
+				// 🐨 add structuredContent here
 				content: [
 					createText(
 						`Tag "${updatedTag.name}" (ID: ${id}) updated successfully`,
 					),
+					// 🐨 reduce duplication by switching this to a resource link
 					createTagEmbeddedResource(updatedTag),
+					// 🐨 add the structuredContent as a text block
 				],
 			}
 		},
@@ -261,23 +298,26 @@ export async function initializeTools(agent: EpicMeMCP) {
 		{
 			title: 'Delete Tag',
 			description: 'Delete a tag',
-
 			annotations: {
-				idempotentHint: true,
 				openWorldHint: false,
 			} satisfies ToolAnnotations,
 			inputSchema: tagIdSchema,
+			// 🐨 add an outputSchema here with success (boolean) and tag (tagSchema)
 		},
 		async ({ id }) => {
 			const existingTag = await agent.db.getTag(id)
 			invariant(existingTag, `Tag ID "${id}" not found`)
 			await agent.db.deleteTag(id)
+			// 🐨 add a structuredContent here that matches the outputSchema
 			return {
+				// 🐨 add structuredContent here
 				content: [
 					createText(
 						`Tag "${existingTag.name}" (ID: ${id}) deleted successfully`,
 					),
+					// 🐨 reduce duplication by switching this to a resource link
 					createTagEmbeddedResource(existingTag),
+					// 🐨 add the structuredContent as a text block
 				],
 			}
 		},
@@ -288,13 +328,13 @@ export async function initializeTools(agent: EpicMeMCP) {
 		{
 			title: 'Add Tag to Entry',
 			description: 'Add a tag to an entry',
-
 			annotations: {
 				destructiveHint: false,
 				idempotentHint: true,
 				openWorldHint: false,
 			} satisfies ToolAnnotations,
 			inputSchema: entryTagIdSchema,
+			// 🐨 add an outputSchema here with a success boolean and an entryTag that is an entryTagSchema
 		},
 		async ({ entryId, tagId }) => {
 			const tag = await agent.db.getTag(tagId)
@@ -305,13 +345,18 @@ export async function initializeTools(agent: EpicMeMCP) {
 				entryId,
 				tagId,
 			})
+			// 🐨 add a structuredContent here that matches the outputSchema
 			return {
+				// 🐨 add structuredContent here
 				content: [
 					createText(
 						`Tag "${tag.name}" (ID: ${entryTag.tagId}) added to entry "${entry.title}" (ID: ${entryTag.entryId}) successfully`,
 					),
+					// 🐨 reduce duplication by switching this to a resource link
 					createTagEmbeddedResource(tag),
+					// 🐨 reduce duplication by switching this to a resource link
 					createEntryEmbeddedResource(entry),
+					// 🐨 add the structuredContent as a text block
 				],
 			}
 		},
@@ -323,7 +368,6 @@ export async function initializeTools(agent: EpicMeMCP) {
 			title: 'Create Wrapped Video',
 			description:
 				'Create a "wrapped" video highlighting stats of your journaling this year',
-
 			annotations: {
 				destructiveHint: false,
 				openWorldHint: false,
@@ -342,6 +386,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 						'If set to > 0, use mock mode and this is the mock wait time in milliseconds',
 					),
 			},
+			// 🐨 add an outputSchema here with a videoUri field (you're on your own here!)
 		},
 		async ({ year = new Date().getFullYear(), mockTime }) => {
 			const entries = await agent.db.getEntries()
@@ -358,9 +403,13 @@ export async function initializeTools(agent: EpicMeMCP) {
 				year,
 				mockTime,
 			})
+			// 🐨 add a structuredContent here that matches the outputSchema
 			return {
+				// 🐨 add structuredContent here
 				content: [
 					createText('Video created successfully'),
+					// 🦉 keep the resource link here. Even though the structuredContent
+					// has the URI, clients may not look for it and instead look for resource links
 					{
 						type: 'resource_link',
 						uri: videoUri,
@@ -368,11 +417,26 @@ export async function initializeTools(agent: EpicMeMCP) {
 						description: `Wrapped Video for ${year}`,
 						mimeType: 'video/mp4',
 					},
+					// 🐨 add the structuredContent as a text block
 				],
 			}
 		},
 	)
 }
+
+type ToolAnnotations = {
+	// defaults to true, so only allow false
+	openWorldHint?: false
+} & (
+	| {
+			// when readOnlyHint is true, none of the other annotations can be changed
+			readOnlyHint: true
+	  }
+	| {
+			destructiveHint?: false // Only allow false (default is true)
+			idempotentHint?: true // Only allow true (default is false)
+	  }
+)
 
 function createText(text: unknown): CallToolResult['content'][number] {
 	if (typeof text === 'string') {
@@ -413,6 +477,9 @@ function createTagResourceLink(tag: {
 	}
 }
 
+// 💣 we now use structuredContent to return the contents of the resources with
+// resource links to share the URIs. Feel free to delete the embedded resource
+// utilities below.
 type ResourceContent = CallToolResult['content'][number]
 
 function createEntryEmbeddedResource(entry: { id: number }): ResourceContent {
