@@ -9,10 +9,9 @@ import {
 	tagIdSchema,
 	updateEntryInputSchema,
 	updateTagInputSchema,
-	// 💰 you'll need these:
-	// entryTagSchema,
-	// entryWithTagsSchema,
-	// tagSchema,
+	entryTagSchema,
+	entryWithTagsSchema,
+	tagSchema,
 } from './db/schema.ts'
 import { type EpicMeMCP } from './index.ts'
 import { createWrappedVideo } from './video.ts'
@@ -28,7 +27,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 				openWorldHint: false,
 			} satisfies ToolAnnotations,
 			inputSchema: createEntryInputSchema,
-			// 🐨 add an outputSchema here with an entry that is an entryWithTagsSchema
+			outputSchema: { entry: entryWithTagsSchema },
 		},
 		async (entry) => {
 			const createdEntry = await agent.db.createEntry(entry)
@@ -41,23 +40,18 @@ export async function initializeTools(agent: EpicMeMCP) {
 				}
 			}
 
-			// 🐨 refetch entry to get updated tags
-			// 💰 agent.db.getEntry(createdEntry.id)
-			// 💯 add invariant to check if the entry was found
+			const entryWithTags = await agent.db.getEntry(createdEntry.id)
+			invariant(entryWithTags, `Failed to refetch created entry`)
 
-			// 🐨 create a structuredContent here that matches the outputSchema
+			const structuredContent = { entry: entryWithTags }
 			return {
-				// 🐨 add structuredContent here
+				structuredContent,
 				content: [
 					createText(
 						`Entry "${createdEntry.title}" created successfully with ID "${createdEntry.id}"`,
 					),
-					// 🐨 reduce duplication by switching this to a resource link
-					// 💰 createEntryResourceLink(createdEntry),
-					createEntryEmbeddedResource(createdEntry),
-
-					// 🐨 add the structuredContent as a text block
-					// 💰 createText(structuredContent),
+					createEntryResourceLink(createdEntry),
+					createText(structuredContent),
 				],
 			}
 		},
@@ -73,18 +67,17 @@ export async function initializeTools(agent: EpicMeMCP) {
 				openWorldHint: false,
 			} satisfies ToolAnnotations,
 			inputSchema: entryIdSchema,
-			// 🐨 add an outputSchema here with an entry that is an entrySchema
+			outputSchema: { entry: entryWithTagsSchema },
 		},
 		async ({ id }) => {
 			const entry = await agent.db.getEntry(id)
 			invariant(entry, `Entry with ID "${id}" not found`)
-			// 🐨 add a structuredContent here that matches the outputSchema
+			const structuredContent = { entry }
 			return {
-				// 🐨 add structuredContent here
+				structuredContent,
 				content: [
-					// 🐨 reduce duplication by switching this to a resource link
-					createEntryEmbeddedResource(entry),
-					// 🐨 add the structuredContent as a text block
+					createEntryResourceLink(entry),
+					createText(structuredContent),
 				],
 			}
 		},
@@ -99,18 +92,18 @@ export async function initializeTools(agent: EpicMeMCP) {
 				readOnlyHint: true,
 				openWorldHint: false,
 			} satisfies ToolAnnotations,
-			// 🐨 add an outputSchema here with entries that is an array of entrySchema
+			outputSchema: { entries: z.array(entryWithTagsSchema) },
 		},
 		async () => {
 			const entries = await agent.db.getEntries()
 			const entryLinks = entries.map(createEntryResourceLink)
-			// 🐨 add a structuredContent here that matches the outputSchema
+			const structuredContent = { entries }
 			return {
-				// 🐨 add structuredContent here
+				structuredContent,
 				content: [
 					createText(`Found ${entries.length} entries.`),
 					...entryLinks,
-					// 🐨 add the structuredContent as a text block
+					createText(structuredContent),
 				],
 			}
 		},
@@ -128,22 +121,21 @@ export async function initializeTools(agent: EpicMeMCP) {
 				openWorldHint: false,
 			} satisfies ToolAnnotations,
 			inputSchema: updateEntryInputSchema,
-			// 🐨 add an outputSchema here with an entry that is an entryWithTagsSchema
+			outputSchema: { entry: entryWithTagsSchema },
 		},
 		async ({ id, ...updates }) => {
 			const existingEntry = await agent.db.getEntry(id)
 			invariant(existingEntry, `Entry with ID "${id}" not found`)
 			const updatedEntry = await agent.db.updateEntry(id, updates)
-			// 🐨 add a structuredContent here that matches the outputSchema
+			const structuredContent = { entry: updatedEntry }
 			return {
-				// 🐨 add structuredContent here
+				structuredContent,
 				content: [
 					createText(
 						`Entry "${updatedEntry.title}" (ID: ${id}) updated successfully`,
 					),
-					// 🐨 reduce duplication by switching this to a resource link
-					createEntryEmbeddedResource(updatedEntry),
-					// 🐨 add the structuredContent as a text block
+					createEntryResourceLink(updatedEntry),
+					createText(structuredContent),
 				],
 			}
 		},
@@ -158,23 +150,22 @@ export async function initializeTools(agent: EpicMeMCP) {
 				openWorldHint: false,
 			} satisfies ToolAnnotations,
 			inputSchema: entryIdSchema,
-			// 🐨 add an outputSchema here with success (boolean) and entry (entryWithTagsSchema)
+			outputSchema: { success: z.boolean(), entry: entryWithTagsSchema },
 		},
 		async ({ id }) => {
 			const existingEntry = await agent.db.getEntry(id)
 			invariant(existingEntry, `Entry with ID "${id}" not found`)
 			await agent.db.deleteEntry(id)
 
-			// 🐨 add a structuredContent here that matches the outputSchema
+			const structuredContent = { success: true, entry: existingEntry }
 			return {
-				// 🐨 add structuredContent here
+				structuredContent,
 				content: [
 					createText(
 						`Entry "${existingEntry.title}" (ID: ${id}) deleted successfully`,
 					),
-					// 🐨 reduce duplication by switching this to a resource link
-					createEntryEmbeddedResource(existingEntry),
-					// 🐨 add the structuredContent as a text block
+					createEntryResourceLink(existingEntry),
+					createText(structuredContent),
 				],
 			}
 		},
@@ -190,20 +181,19 @@ export async function initializeTools(agent: EpicMeMCP) {
 				openWorldHint: false,
 			} satisfies ToolAnnotations,
 			inputSchema: createTagInputSchema,
-			// 🐨 add an outputSchema here with a tag that is a tagSchema
+			outputSchema: { tag: tagSchema },
 		},
 		async (tag) => {
 			const createdTag = await agent.db.createTag(tag)
-			// 🐨 add a structuredContent here that matches the outputSchema
+			const structuredContent = { tag: createdTag }
 			return {
-				// 🐨 add structuredContent here
+				structuredContent,
 				content: [
 					createText(
 						`Tag "${createdTag.name}" created successfully with ID "${createdTag.id}"`,
 					),
-					// 🐨 reduce duplication by switching this to a resource link
-					createTagEmbeddedResource(createdTag),
-					// 🐨 add the structuredContent as a text block
+					createTagResourceLink(createdTag),
+					createText(structuredContent),
 				],
 			}
 		},
@@ -219,19 +209,18 @@ export async function initializeTools(agent: EpicMeMCP) {
 				openWorldHint: false,
 			} satisfies ToolAnnotations,
 			inputSchema: tagIdSchema,
-			// 🐨 add an outputSchema here with a tag that is a tagSchema
+			outputSchema: { tag: tagSchema },
 		},
 		async ({ id }) => {
 			const tag = await agent.db.getTag(id)
 			invariant(tag, `Tag ID "${id}" not found`)
-			// 🐨 add a structuredContent here that matches the outputSchema
+			const structuredContent = { tag }
 			return {
-				// 🐨 add structuredContent here
+				structuredContent,
 				content: [
 					createText(tag),
-					// 🐨 reduce duplication by switching this to a resource link
-					createTagEmbeddedResource(tag),
-					// 🐨 add the structuredContent as a text block
+					createTagResourceLink(tag),
+					createText(structuredContent),
 				],
 			}
 		},
@@ -246,18 +235,18 @@ export async function initializeTools(agent: EpicMeMCP) {
 				readOnlyHint: true,
 				openWorldHint: false,
 			} satisfies ToolAnnotations,
-			// 🐨 add an outputSchema here with tags that is an array of tagSchema
+			outputSchema: { tags: z.array(tagSchema) },
 		},
 		async () => {
 			const tags = await agent.db.getTags()
 			const tagLinks = tags.map(createTagResourceLink)
-			// 🐨 add a structuredContent here that matches the outputSchema
+			const structuredContent = { tags }
 			return {
-				// 🐨 add structuredContent here
+				structuredContent,
 				content: [
 					createText(`Found ${tags.length} tags.`),
 					...tagLinks,
-					// 🐨 add the structuredContent as a text block
+					createText(structuredContent),
 				],
 			}
 		},
@@ -274,20 +263,19 @@ export async function initializeTools(agent: EpicMeMCP) {
 				openWorldHint: false,
 			} satisfies ToolAnnotations,
 			inputSchema: updateTagInputSchema,
-			// 🐨 add an outputSchema here with a tag that is a tagSchema
+			outputSchema: { tag: tagSchema },
 		},
 		async ({ id, ...updates }) => {
 			const updatedTag = await agent.db.updateTag(id, updates)
-			// 🐨 add a structuredContent here that matches the outputSchema
+			const structuredContent = { tag: updatedTag }
 			return {
-				// 🐨 add structuredContent here
+				structuredContent,
 				content: [
 					createText(
 						`Tag "${updatedTag.name}" (ID: ${id}) updated successfully`,
 					),
-					// 🐨 reduce duplication by switching this to a resource link
-					createTagEmbeddedResource(updatedTag),
-					// 🐨 add the structuredContent as a text block
+					createTagResourceLink(updatedTag),
+					createText(structuredContent),
 				],
 			}
 		},
@@ -302,22 +290,21 @@ export async function initializeTools(agent: EpicMeMCP) {
 				openWorldHint: false,
 			} satisfies ToolAnnotations,
 			inputSchema: tagIdSchema,
-			// 🐨 add an outputSchema here with success (boolean) and tag (tagSchema)
+			outputSchema: { success: z.boolean(), tag: tagSchema },
 		},
 		async ({ id }) => {
 			const existingTag = await agent.db.getTag(id)
 			invariant(existingTag, `Tag ID "${id}" not found`)
 			await agent.db.deleteTag(id)
-			// 🐨 add a structuredContent here that matches the outputSchema
+			const structuredContent = { success: true, tag: existingTag }
 			return {
-				// 🐨 add structuredContent here
+				structuredContent,
 				content: [
 					createText(
 						`Tag "${existingTag.name}" (ID: ${id}) deleted successfully`,
 					),
-					// 🐨 reduce duplication by switching this to a resource link
-					createTagEmbeddedResource(existingTag),
-					// 🐨 add the structuredContent as a text block
+					createTagResourceLink(existingTag),
+					createText(structuredContent),
 				],
 			}
 		},
@@ -334,7 +321,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 				openWorldHint: false,
 			} satisfies ToolAnnotations,
 			inputSchema: entryTagIdSchema,
-			// 🐨 add an outputSchema here with a success boolean and an entryTag that is an entryTagSchema
+			outputSchema: { success: z.boolean(), entryTag: entryTagSchema },
 		},
 		async ({ entryId, tagId }) => {
 			const tag = await agent.db.getTag(tagId)
@@ -345,18 +332,16 @@ export async function initializeTools(agent: EpicMeMCP) {
 				entryId,
 				tagId,
 			})
-			// 🐨 add a structuredContent here that matches the outputSchema
+			const structuredContent = { success: true, entryTag }
 			return {
-				// 🐨 add structuredContent here
+				structuredContent,
 				content: [
 					createText(
 						`Tag "${tag.name}" (ID: ${entryTag.tagId}) added to entry "${entry.title}" (ID: ${entryTag.entryId}) successfully`,
 					),
-					// 🐨 reduce duplication by switching this to a resource link
-					createTagEmbeddedResource(tag),
-					// 🐨 reduce duplication by switching this to a resource link
-					createEntryEmbeddedResource(entry),
-					// 🐨 add the structuredContent as a text block
+					createTagResourceLink(tag),
+					createEntryResourceLink(entry),
+					createText(structuredContent),
 				],
 			}
 		},
@@ -386,7 +371,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 						'If set to > 0, use mock mode and this is the mock wait time in milliseconds',
 					),
 			},
-			// 🐨 add an outputSchema here with a videoUri field (you're on your own here!)
+			outputSchema: { videoUri: z.string() },
 		},
 		async ({ year = new Date().getFullYear(), mockTime }) => {
 			const entries = await agent.db.getEntries()
@@ -403,13 +388,11 @@ export async function initializeTools(agent: EpicMeMCP) {
 				year,
 				mockTime,
 			})
-			// 🐨 add a structuredContent here that matches the outputSchema
+			const structuredContent = { videoUri }
 			return {
-				// 🐨 add structuredContent here
+				structuredContent,
 				content: [
 					createText('Video created successfully'),
-					// 🦉 keep the resource link here. Even though the structuredContent
-					// has the URI, clients may not look for it and instead look for resource links
 					{
 						type: 'resource_link',
 						uri: videoUri,
@@ -417,7 +400,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 						description: `Wrapped Video for ${year}`,
 						mimeType: 'video/mp4',
 					},
-					// 🐨 add the structuredContent as a text block
+					createText(structuredContent),
 				],
 			}
 		},
@@ -474,32 +457,5 @@ function createTagResourceLink(tag: {
 		name: tag.name,
 		description: `Tag: "${tag.name}"`,
 		mimeType: 'application/json',
-	}
-}
-
-// 💣 we now use structuredContent to return the contents of the resources with
-// resource links to share the URIs. Feel free to delete the embedded resource
-// utilities below.
-type ResourceContent = CallToolResult['content'][number]
-
-function createEntryEmbeddedResource(entry: { id: number }): ResourceContent {
-	return {
-		type: 'resource',
-		resource: {
-			uri: `epicme://entries/${entry.id}`,
-			mimeType: 'application/json',
-			text: JSON.stringify(entry),
-		},
-	}
-}
-
-function createTagEmbeddedResource(tag: { id: number }): ResourceContent {
-	return {
-		type: 'resource',
-		resource: {
-			uri: `epicme://tags/${tag.id}`,
-			mimeType: 'application/json',
-			text: JSON.stringify(tag),
-		},
 	}
 }
