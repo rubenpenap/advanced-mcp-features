@@ -15,6 +15,7 @@ import {
 	updateTagInputSchema,
 } from './db/schema.ts'
 import { type EpicMeMCP } from './index.ts'
+// 🐨 import the suggestTagsSampling function from the sampling.ts file
 import { createWrappedVideo } from './video.ts'
 
 export async function initializeTools(agent: EpicMeMCP) {
@@ -40,6 +41,10 @@ export async function initializeTools(agent: EpicMeMCP) {
 					})
 				}
 			}
+
+			// 🐨 call the suggestTagsSampling function with the agent and the createdEntry.id
+			// 🐨 we don't want to wait for the sampling function to finish so
+			// instead of "await" use "void" which effectively ignores the promise.
 
 			const structuredContent = { entry: createdEntry }
 			return {
@@ -153,6 +158,26 @@ export async function initializeTools(agent: EpicMeMCP) {
 		async ({ id }) => {
 			const existingEntry = await agent.db.getEntry(id)
 			invariant(existingEntry, `Entry with ID "${id}" not found`)
+			const confirmed = await elicitConfirmation(
+				agent,
+				`Are you sure you want to delete entry "${existingEntry.title}" (ID: ${id})?`,
+			)
+			if (!confirmed) {
+				const structuredContent = {
+					success: false,
+					entry: existingEntry,
+				}
+				return {
+					structuredContent,
+					content: [
+						createText(
+							`Deleting entry "${existingEntry.title}" (ID: ${id}) rejected by the user.`,
+						),
+						createText(structuredContent),
+					],
+				}
+			}
+
 			await agent.db.deleteEntry(id)
 
 			const structuredContent = { success: true, entry: existingEntry }
@@ -290,12 +315,24 @@ export async function initializeTools(agent: EpicMeMCP) {
 			const existingTag = await agent.db.getTag(id)
 			invariant(existingTag, `Tag ID "${id}" not found`)
 
-			// 🐨 first check whether the client has the elicitation capability, if it does then:
-			// 🐨 Use agent.server.server.elicitInput to ask the user to confirm deletion of the tag.
-			//    - The message should be: `Are you sure you want to delete tag "${existingTag.name}" (ID: ${id})?`
-			//    - The requestedSchema should be an object with a boolean property "confirmed".
-			// 🐨 If the user does not confirm, return structuredContent with success: false and the tag.
-			//    - Also return content with a text block saying `Deleting tag "${existingTag.name}" (ID: ${id}) rejected by the user.`, the tag resource link, and the structuredContent.
+			const confirmed = await elicitConfirmation(
+				agent,
+				`Are you sure you want to delete tag "${existingTag.name}" (ID: ${id})?`,
+			)
+
+			if (!confirmed) {
+				const structuredContent = { success: false, tag: existingTag }
+				return {
+					structuredContent,
+					content: [
+						createText(
+							`Deleting tag "${existingTag.name}" (ID: ${id}) rejected by the user.`,
+						),
+						createTagResourceLink(existingTag),
+						createText(structuredContent),
+					],
+				}
+			}
 
 			await agent.db.deleteTag(id)
 			const structuredContent = { success: true, tag: existingTag }
@@ -460,4 +497,25 @@ function createTagResourceLink(tag: {
 		description: `Tag: "${tag.name}"`,
 		mimeType: 'application/json',
 	}
+}
+
+async function elicitConfirmation(agent: EpicMeMCP, message: string) {
+	const capabilities = agent.server.server.getClientCapabilities()
+	if (!capabilities?.elicitation) {
+		return true
+	}
+
+	const result = await agent.server.server.elicitInput({
+		message,
+		requestedSchema: {
+			type: 'object',
+			properties: {
+				confirmed: {
+					type: 'boolean',
+					description: 'Whether to confirm the action',
+				},
+			},
+		},
+	})
+	return result.action === 'accept' && result.content?.confirmed === true
 }

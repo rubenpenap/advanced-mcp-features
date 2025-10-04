@@ -4,8 +4,13 @@ import { invariant } from '@epic-web/invariant'
 import { faker } from '@faker-js/faker'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
-import { ElicitRequestSchema } from '@modelcontextprotocol/sdk/types.js'
+import {
+	CreateMessageRequestSchema,
+	type CreateMessageResult,
+	ElicitRequestSchema,
+} from '@modelcontextprotocol/sdk/types.js'
 import { test, expect } from 'vitest'
+import { type z } from 'zod'
 
 function getTestDbPath() {
 	return `./test.ignored/db.${process.env.VITEST_WORKER_ID}.${Math.random().toString(36).slice(2)}.sqlite`
@@ -42,6 +47,28 @@ async function setupClient({ capabilities = {} } = {}) {
 			await fs.unlink(EPIC_ME_DB_PATH).catch(() => {}) // ignore missing file
 		},
 	}
+}
+
+async function deferred<ResolvedValue>() {
+	const ref = {} as {
+		promise: Promise<ResolvedValue>
+		resolve: (value: ResolvedValue) => void
+		reject: (reason?: any) => void
+		value: ResolvedValue | undefined
+		reason: any | undefined
+	}
+	ref.promise = new Promise<ResolvedValue>((resolve, reject) => {
+		ref.resolve = (value) => {
+			ref.value = value
+			resolve(value)
+		}
+		ref.reject = (reason) => {
+			ref.reason = reason
+			reject(reason)
+		}
+	})
+
+	return ref
 }
 
 test('Tool Definition', async () => {
@@ -149,37 +176,7 @@ test('Tool annotations and structured output', async () => {
 	invariant(entry, '🚨 No entry resource found')
 	invariant(entry.id, '🚨 No entry ID found')
 
-	// List tools again now that entry and tag exist
-	list = await client.listTools()
-	toolMap = Object.fromEntries(list.tools.map((t) => [t.name, t]))
-
-	// Check delete_entry annotations and outputSchema
-	const deleteEntryTool = toolMap['delete_entry']
-	invariant(deleteEntryTool, '🚨 delete_entry tool not found')
-	expect(
-		deleteEntryTool.annotations,
-		'🚨 delete_entry missing annotations',
-	).toEqual(expect.objectContaining({ openWorldHint: false }))
-	expect(
-		deleteEntryTool.outputSchema,
-		'🚨 delete_entry missing outputSchema',
-	).toBeDefined()
-
-	// Check delete_tag annotations and outputSchema
-	const deleteTagTool = toolMap['delete_tag']
-	invariant(deleteTagTool, '🚨 delete_tag tool not found')
-	expect(
-		deleteTagTool.annotations,
-		'🚨 delete_tag missing annotations',
-	).toEqual(expect.objectContaining({ openWorldHint: false }))
-	expect(
-		deleteTagTool.outputSchema,
-		'🚨 delete_tag missing outputSchema',
-	).toBeDefined()
-
-	// Test structured content in responses
-
-	// get_entry structuredContent
+	// Test structured content in basic CRUD operations
 	const getEntryResult = await client.callTool({
 		name: 'get_entry',
 		arguments: { id: entry.id },
@@ -189,44 +186,6 @@ test('Tool annotations and structured output', async () => {
 	expect(getEntryContent.id, '🚨 get_entry structuredContent.id mismatch').toBe(
 		entry.id,
 	)
-
-	// get_tag structuredContent
-	const getTagResult = await client.callTool({
-		name: 'get_tag',
-		arguments: { id: tag.id },
-	})
-	const getTagContent = (getTagResult.structuredContent as any).tag
-	invariant(getTagContent, '🚨 get_tag missing tag in structuredContent')
-	expect(getTagContent.id, '🚨 get_tag structuredContent.id mismatch').toBe(
-		tag.id,
-	)
-
-	// update_entry structuredContent
-	const updateEntryResult = await client.callTool({
-		name: 'update_entry',
-		arguments: { id: entry.id, title: 'Updated Entry' },
-	})
-	const updateEntryContent = (updateEntryResult.structuredContent as any).entry
-	invariant(
-		updateEntryContent,
-		'🚨 update_entry missing entry in structuredContent',
-	)
-	expect(
-		updateEntryContent.title,
-		'🚨 update_entry structuredContent.title mismatch',
-	).toBe('Updated Entry')
-
-	// update_tag structuredContent
-	const updateTagResult = await client.callTool({
-		name: 'update_tag',
-		arguments: { id: tag.id, name: 'UpdatedTag' },
-	})
-	const updateTagContent = (updateTagResult.structuredContent as any).tag
-	invariant(updateTagContent, '🚨 update_tag missing tag in structuredContent')
-	expect(
-		updateTagContent.name,
-		'🚨 update_tag structuredContent.name mismatch',
-	).toBe('UpdatedTag')
 })
 
 test('Elicitation: delete_tag decline', async () => {
@@ -265,70 +224,93 @@ test('Elicitation: delete_tag decline', async () => {
 	).toBe(false)
 })
 
-test('Elicitation: delete_tag confirmation', async () => {
-	await using setup = await setupClient({ capabilities: { elicitation: {} } })
+test('Simple Sampling', async () => {
+	await using setup = await setupClient({ capabilities: { sampling: {} } })
 	const { client } = setup
+	const messageResultDeferred = await deferred<CreateMessageResult>()
+	const messageRequestDeferred =
+		await deferred<z.infer<typeof CreateMessageRequestSchema>>()
 
-	// Set up a handler for elicitation requests
-	let elicitationRequest: any
-	client.setRequestHandler(ElicitRequestSchema, (req) => {
-		elicitationRequest = req
-		// Simulate user accepting the confirmation
-		return {
-			action: 'accept',
-			content: { confirmed: true },
-		}
+	client.setRequestHandler(CreateMessageRequestSchema, (r) => {
+		messageRequestDeferred.resolve(r)
+		return messageResultDeferred.promise
 	})
 
-	// Create a tag to delete
-	const tagResult = await client.callTool({
+	const fakeTag1 = {
+		name: faker.lorem.word(),
+		description: faker.lorem.sentence(),
+	}
+
+	const result = await client.callTool({
 		name: 'create_tag',
-		arguments: {
-			name: 'Elicit Test Tag 2',
-			description: 'Testing elicitation acceptance.',
-		},
+		arguments: fakeTag1,
 	})
-	const tag = (tagResult.structuredContent as any).tag
-	invariant(tag, '🚨 No tag resource found')
-	invariant(tag.id, '🚨 No tag ID found')
+	const newTag1 = (result.structuredContent as any).tag
+	invariant(newTag1, '🚨 No tag1 resource found')
+	invariant(newTag1.id, '🚨 No new tag1 found')
 
-	// Delete the tag, which should trigger elicitation
-	const deleteResult = await client.callTool({
-		name: 'delete_tag',
-		arguments: { id: tag.id },
+	const entry = {
+		title: faker.lorem.words(3),
+		content: faker.lorem.paragraphs(2),
+	}
+	await client.callTool({
+		name: 'create_entry',
+		arguments: entry,
 	})
-	const structuredContent = deleteResult.structuredContent as any
-	invariant(
-		structuredContent,
-		'🚨 No structuredContent returned from delete_tag',
-	)
-	invariant(
-		'success' in structuredContent,
-		'🚨 structuredContent missing success field',
-	)
-	expect(
-		structuredContent.success,
-		'🚨 structuredContent.success should be true after accepting deletion of a tag',
-	).toBe(true)
+	const request = await messageRequestDeferred.promise
 
-	invariant(elicitationRequest, '🚨 No elicitation request was sent')
-	const params = elicitationRequest.params
-	invariant(params, '🚨 elicitationRequest missing params')
-
+	// Basic sampling requirements for simple step
 	expect(
-		params.message,
-		'🚨 elicitationRequest.params.message should match expected confirmation prompt',
-	).toMatch(/Are you sure you want to delete tag/i)
-
-	expect(
-		params.requestedSchema,
-		'🚨 elicitationRequest.params.requestedSchema should match expected schema',
+		request,
+		'🚨 request should be a sampling/createMessage request',
 	).toEqual(
 		expect.objectContaining({
-			type: 'object',
-			properties: expect.objectContaining({
-				confirmed: expect.objectContaining({ type: 'boolean' }),
+			method: 'sampling/createMessage',
+			params: expect.objectContaining({
+				maxTokens: expect.any(Number),
+				systemPrompt: expect.any(String),
+				messages: expect.arrayContaining([
+					expect.objectContaining({
+						role: 'user',
+						content: expect.objectContaining({
+							type: 'text',
+							text: expect.any(String),
+							mimeType: expect.any(String),
+						}),
+					}),
+				]),
 			}),
 		}),
 	)
+
+	// Basic validation
+	const params = request.params
+	invariant(
+		params && 'maxTokens' in params,
+		'🚨 maxTokens parameter is required',
+	)
+	invariant(params && 'systemPrompt' in params, '🚨 systemPrompt is required')
+	invariant(
+		params && 'messages' in params && Array.isArray(params.messages),
+		'🚨 messages array is required',
+	)
+	const userMessage = params.messages.find((m) => m.role === 'user')
+	invariant(userMessage, '🚨 User message is required')
+	invariant(
+		typeof userMessage.content.text === 'string',
+		'🚨 User message content text must be a string',
+	)
+
+	messageResultDeferred.resolve({
+		model: 'stub-model',
+		stopReason: 'endTurn',
+		role: 'assistant',
+		content: {
+			type: 'text',
+			text: JSON.stringify([{ id: newTag1.id }]),
+		},
+	})
+
+	// give the server a chance to process the result
+	await new Promise((resolve) => setTimeout(resolve, 100))
 })
