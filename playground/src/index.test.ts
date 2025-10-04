@@ -224,7 +224,7 @@ test('Elicitation: delete_tag decline', async () => {
 	).toBe(false)
 })
 
-test('Simple Sampling', async () => {
+test('Advanced Sampling', async () => {
 	await using setup = await setupClient({ capabilities: { sampling: {} } })
 	const { client } = setup
 	const messageResultDeferred = await deferred<CreateMessageResult>()
@@ -237,6 +237,10 @@ test('Simple Sampling', async () => {
 	})
 
 	const fakeTag1 = {
+		name: faker.lorem.word(),
+		description: faker.lorem.sentence(),
+	}
+	const fakeTag2 = {
 		name: faker.lorem.word(),
 		description: faker.lorem.sentence(),
 	}
@@ -259,47 +263,122 @@ test('Simple Sampling', async () => {
 	})
 	const request = await messageRequestDeferred.promise
 
-	// Basic sampling requirements for simple step
-	expect(
-		request,
-		'🚨 request should be a sampling/createMessage request',
-	).toEqual(
-		expect.objectContaining({
-			method: 'sampling/createMessage',
-			params: expect.objectContaining({
-				maxTokens: expect.any(Number),
-				systemPrompt: expect.any(String),
-				messages: expect.arrayContaining([
-					expect.objectContaining({
-						role: 'user',
-						content: expect.objectContaining({
-							type: 'text',
-							text: expect.any(String),
-							mimeType: expect.any(String),
+	try {
+		expect(
+			request,
+			'🚨 request should be a sampling/createMessage request',
+		).toEqual(
+			expect.objectContaining({
+				method: 'sampling/createMessage',
+				params: expect.objectContaining({
+					maxTokens: expect.any(Number),
+					systemPrompt: expect.stringMatching(/example/i),
+					messages: expect.arrayContaining([
+						expect.objectContaining({
+							role: 'user',
+							content: expect.objectContaining({
+								type: 'text',
+								text: expect.stringMatching(/entry/i),
+								mimeType: 'application/json',
+							}),
 						}),
-					}),
-				]),
+					]),
+				}),
 			}),
-		}),
-	)
+		)
 
-	// Basic validation
-	const params = request.params
-	invariant(
-		params && 'maxTokens' in params,
-		'🚨 maxTokens parameter is required',
-	)
-	invariant(params && 'systemPrompt' in params, '🚨 systemPrompt is required')
-	invariant(
-		params && 'messages' in params && Array.isArray(params.messages),
-		'🚨 messages array is required',
-	)
-	const userMessage = params.messages.find((m) => m.role === 'user')
-	invariant(userMessage, '🚨 User message is required')
-	invariant(
-		typeof userMessage.content.text === 'string',
-		'🚨 User message content text must be a string',
-	)
+		// 🚨 Proactive checks for advanced sampling requirements
+		const params = request.params
+		invariant(
+			params && 'maxTokens' in params,
+			'🚨 maxTokens parameter is required',
+		)
+		invariant(
+			params.maxTokens > 50,
+			'🚨 maxTokens should be increased for longer responses (>50)',
+		)
+
+		invariant(params && 'systemPrompt' in params, '🚨 systemPrompt is required')
+		invariant(
+			typeof params.systemPrompt === 'string',
+			'🚨 systemPrompt must be a string',
+		)
+
+		invariant(
+			params && 'messages' in params && Array.isArray(params.messages),
+			'🚨 messages array is required',
+		)
+		const userMessage = params.messages.find((m) => m.role === 'user')
+		invariant(userMessage, '🚨 User message is required')
+		invariant(
+			userMessage.content.mimeType === 'application/json',
+			'🚨 Content should be JSON for structured data',
+		)
+
+		// 🚨 Validate the JSON structure contains required fields
+		invariant(
+			typeof userMessage.content.text === 'string',
+			'🚨 User message content text must be a string',
+		)
+		let messageData: any
+		try {
+			messageData = JSON.parse(userMessage.content.text)
+		} catch (error) {
+			throw new Error('🚨 User message content must be valid JSON')
+		}
+
+		invariant(messageData.entry, '🚨 JSON should contain entry data')
+		invariant(
+			messageData.existingTags,
+			'🚨 JSON should contain existingTags for context',
+		)
+		invariant(
+			Array.isArray(messageData.existingTags),
+			'🚨 existingTags should be an array',
+		)
+	} catch (error) {
+		console.error('🚨 Advanced sampling features not properly implemented!')
+		console.error(
+			'🚨 This exercise requires you to send a structured sampling request to the LLM with the new entry, its current tags, and all existing tags, as JSON (application/json).',
+		)
+		console.error('🚨 You need to:')
+		console.error(
+			'🚨   1. Increase maxTokens to a reasonable value (e.g., 100+) for longer responses.',
+		)
+		console.error(
+			'🚨   2. Create a meaningful systemPrompt that includes examples of the expected output format (array of tag objects, with examples for existing and new tags).',
+		)
+		console.error(
+			'🚨   3. Structure the user message as JSON with mimeType: "application/json".',
+		)
+		console.error(
+			'🚨   4. Include both entry data AND existingTags context in the JSON (e.g., { entry: {...}, existingTags: [...] }).',
+		)
+		console.error(
+			'🚨   5. Test your prompt in an LLM playground and refine as needed.',
+		)
+		console.error(
+			'🚨 EXAMPLE: systemPrompt should include examples of expected tag suggestions.',
+		)
+		console.error(
+			'🚨 EXAMPLE: user message should be structured JSON, not plain text.',
+		)
+
+		const params = request.params
+		if (params) {
+			console.error(`🚨 Current maxTokens: ${params.maxTokens} (should be >50)`)
+			console.error(
+				`🚨 Current mimeType: ${params.messages?.[0]?.content?.mimeType} (should be "application/json")`,
+			)
+			console.error(
+				`🚨 SystemPrompt contains "example": ${typeof params.systemPrompt === 'string' && params.systemPrompt.toLowerCase().includes('example')}`,
+			)
+		}
+
+		throw new Error(
+			`🚨 Advanced sampling not configured properly - need structured JSON messages, higher maxTokens, and example-rich system prompt. ${error}`,
+		)
+	}
 
 	messageResultDeferred.resolve({
 		model: 'stub-model',
@@ -307,7 +386,7 @@ test('Simple Sampling', async () => {
 		role: 'assistant',
 		content: {
 			type: 'text',
-			text: JSON.stringify([{ id: newTag1.id }]),
+			text: JSON.stringify([{ id: newTag1.id }, fakeTag2]),
 		},
 	})
 

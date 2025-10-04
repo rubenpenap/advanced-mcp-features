@@ -175,7 +175,6 @@ export async function initializeTools(agent: EpicMeMCP) {
 					],
 				}
 			}
-
 			await agent.db.deleteEntry(id)
 
 			const structuredContent = { success: true, entry: existingEntry }
@@ -317,7 +316,6 @@ export async function initializeTools(agent: EpicMeMCP) {
 				agent,
 				`Are you sure you want to delete tag "${existingTag.name}" (ID: ${id})?`,
 			)
-
 			if (!confirmed) {
 				const structuredContent = { success: false, tag: existingTag }
 				return {

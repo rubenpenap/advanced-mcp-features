@@ -1,100 +1,98 @@
-# Simple Sampling
+# Advanced Sampling Prompt
 
-<EpicVideo url="https://www.epicai.pro/workshops/day-3-4-advanced-mcp-features/simple-sampling~5yj44" />
+<EpicVideo url="https://www.epicai.pro/workshops/day-3-4-advanced-mcp-features/advanced-sampling-prompt~qyf7c" />
 
-👨‍💼 Our users love the prompt functionality, but they asked why the LLM couldn't
-just suggest tags when they create the post and we thought that's a great idea!
-
-So now your goal is to make your server request a simple completion from the
-language model whenever a new journal entry is created.
-
-In this first step, we'll just get things wired up and then we'll work on our
-prompt for the LLM in the next step.
+👨‍💼 Now that you've wired up basic sampling, it's time to make your prompt
+have the LLM do something actually useful! Instead of just asking for a generic
+response, you'll craft a prompt that enables the model to suggest relevant tags
+for a new journal entry.
 
 **Here's what you'll do:**
 
-- When the create_entry tool is called, call the `suggestTagsSampling` function
-  with the agent and the createdEntry.id.
-- We don't want to wait for the sampling function to finish so instead of "await"
-  use "void" which effectively ignores the promise.
-- First check if the client supports sampling. If it does, proceed with the
-  sampling request.
-- Implement a function that sends a sampling request to the client using
-  `agent.server.server.createMessage` (the `server.server` thing is funny, but
-  our MCP server manages an internal server and that's what we're accessing).
-- Use a simple system prompt (e.g., "You are a helpful assistant.") and a user
-  message that references the new journal entry's ID (we'll enhance this next).
-- Set a reasonable `maxTokens` value for the response.
-- Parse the model's response using a provided Zod schema.
-- Send a notification with the result so you can see the model's output.
+- Update your sampling request to provide the LLM with structured information:
+  the new journal entry, its current tags, and all existing tags in the system.
+- Change the user message to send this data as JSON (`application/json`), not
+  plain text.
+- Write a clear, detailed system prompt that instructs the LLM to make a list of
+  suggested tags that are relevant to the entry and not already applied. Make
+  certain it's instructed on the format of the response.
+- Increase the `maxTokens` to allow for a longer, more detailed response.
+- Test and iterate on your prompt! Try pasting the example JSON into your
+  favorite LLM playground and see how it responds. Refine your instructions
+  until you get the output you want.
 
-And don't forget to call it when the user creates a new journal entry!
+<details>
+<summary>Development workflow</summary>
 
-Here's an example of how to check if the client supports sampling:
+🦉 You can use the JSON below to test your prompt:
 
-```ts
-// the server.server is how the MCP SDK exposes the underlying server
-// instance for more advanced APIs like this one.
-const capabilities = agent.server.server.getClientCapabilities()
-if (!capabilities?.sampling) {
-	console.error('Client does not support sampling, skipping sampling request')
-	return
-}
-// Proceed with sampling request here
-```
+1. Write your prompt into the LLM chat
+2. Let it respond (It'll probably ask you to provide the JSON)
+3. Paste the JSON below into the chat and let it respond again
+4. Evaluate the response (make sure it's in the right format)
+5. Repeat in new chats until you're happy with the prompt/response
 
-And here's an example of how to send a sampling request:
-
-```ts
-const result = await agent.server.server.createMessage({
-	// the system prompt is used to explain to the LLM it's purpose
-	systemPrompt: '...',
-	messages: [
-		{
-			role: 'user',
-			content: {
-				type: 'text',
-				// the user message is the input to the LLM
-				text: '...',
-			},
-		},
-	],
-	maxTokens: 100,
-})
-```
-
-The `maxTokens` option references the max tokens the model should return.
-
-<callout-warning>
-	The `system prompt` + `messages` + `OUTPUT MESSAGE` can't exceed the context
-	window size of the model your user is using.
-</callout-warning>
-
-Here's an example of how to send a notification:
-
-```ts
-// void is to communicate we don't care about the return value. Fire and forget.
-void agent.server.server.sendLoggingMessage({
-	level: 'info', // "error" | "debug" | "info" | "notice" | "warning" | "critical" | "alert" | "emergency"
-	// data can be any JSON-serializable value
-	data: {
-		a: 1,
-		otherStuff: '...',
+```json filename=example-user-message.json
+{
+	"entry": {
+		"id": 6,
+		"title": "Day at the Beach with Family",
+		"content": "Spent the whole day at the beach with the family and it couldn't have been better. The kids were totally absorbed in building a massive sandcastle—complete with towers, moats, and even a seaweed flag. We played catch, flew a kite, and waded into the water until our fingers turned into prunes. Rebecca and I went on a shell hunt and found a few keepers. Lunch was sandy PB&Js and watermelon under a big striped umbrella. We stayed until sunset, which painted the sky with ridiculous pinks and oranges. Everyone was sun-tired and happy. Grateful for days like this.",
+		"mood": "grateful",
+		"location": "beach",
+		"weather": "sunny",
+		"isPrivate": 0,
+		"isFavorite": 1,
+		"createdAt": 1746668878,
+		"updatedAt": 1746668878,
+		"tags": [{ "id": 1, "name": "Family" }]
 	},
-})
+	"currentTags": [
+		{
+			"id": 1,
+			"name": "Family",
+			"description": "Spending time with family members",
+			"createdAt": 1746666966,
+			"updatedAt": 1746666966
+		}
+	],
+	"existingTags": [
+		{
+			"id": 1,
+			"name": "Family",
+			"description": "Spending time with family members",
+			"createdAt": 1746666966,
+			"updatedAt": 1746666966
+		},
+		{
+			"id": 2,
+			"name": "Outdoors",
+			"description": "Entries about being outside in nature or open spaces",
+			"createdAt": 1746667900,
+			"updatedAt": 1746667900
+		},
+		{
+			"id": 3,
+			"name": "Exercise",
+			"description": "Physical activity or movement",
+			"createdAt": 1746668000,
+			"updatedAt": 1746668000
+		},
+		{
+			"id": 4,
+			"name": "Food",
+			"description": "Eating, meals, or anything food-related",
+			"createdAt": 1746668001,
+			"updatedAt": 1746668001
+		}
+	]
+}
 ```
 
-Check the specification for more info:
-https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/logging#log-message-notifications
+</details>
 
-The SDK handles keeping track of the logging level and only sending messages if
-they are within the set logging level.
-
----
-
-This step will help you get comfortable with the basic request/response flow for
-sampling in MCP, and set the stage for more advanced prompt engineering in the
-next step.
+This step will help you practice prompt engineering for structured outputs, and
+show you how to use the full power of MCP's sampling API for real-world tasks.
 
 There are tests to help verify your sampling request is working.
 
@@ -111,7 +109,7 @@ To test this in the MCP inspector:
 	"role": "assistant",
 	"content": {
 		"type": "text",
-		"text": "Good job!"
+		"text": "[{\"id\":2},{\"id\":4},{\"name\":\"Beach\",\"description\":\"Activities or experiences at the beach, including sand, water, and seaside fun\"}]"
 	}
 }
 ```
