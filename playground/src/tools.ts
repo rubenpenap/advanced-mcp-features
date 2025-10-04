@@ -15,7 +15,7 @@ import {
 	updateTagInputSchema,
 } from './db/schema.ts'
 import { type EpicMeMCP } from './index.ts'
-// 🐨 import the suggestTagsSampling function from the sampling.ts file
+import { suggestTagsSampling } from './sampling.ts'
 import { createWrappedVideo } from './video.ts'
 
 export async function initializeTools(agent: EpicMeMCP) {
@@ -42,9 +42,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 				}
 			}
 
-			// 🐨 call the suggestTagsSampling function with the agent and the createdEntry.id
-			// 🐨 we don't want to wait for the sampling function to finish so
-			// instead of "await" use "void" which effectively ignores the promise.
+			void suggestTagsSampling(agent, createdEntry.id)
 
 			const structuredContent = { entry: createdEntry }
 			return {
