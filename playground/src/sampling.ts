@@ -23,17 +23,20 @@ export async function suggestTagsSampling(agent: EpicMeMCP, entryId: number) {
 	const currentTags = await agent.db.getEntryTags(entry.id)
 
 	const result = await agent.server.server.createMessage({
-		// 🐨 update this system prompt to explain what the LLM should do with the JSON
-		// we're going to pass to it.
-		// 🦉 You can develop this by chatting with an LLM yourself. Write out a
-		// prompt, give it to the LLM, and then paste some example JSON in and see
-		// whether the LLM responds as you expect.
-		// 🐨 Note: we're expecting the LLM to respond with a JSON array of tag objects.
-		// Existing tags have an "id" property, new tags have a "name" and "description" property.
-		// So make sure you prompt it to respond correctly
-		// 💰 providing the LLM example responses helps a lot!
 		systemPrompt: `
-You are a helpful assistant.
+You are a helpful assistant that suggests relevant tags for journal entries to make them easier to categorize and find later.
+You will be provided with a journal entry, it's current tags, and all existing tags.
+Only suggest tags that are not already applied to this entry.
+Journal entries should not have more than 4-5 tags and it's perfectly fine to not have any tags at all.
+Feel free to suggest new tags that are not currently in the database and they will be created.
+
+You will respond with JSON only.
+Example responses:
+If you have no suggestions, respond with an empty array:
+[]
+
+If you have some suggestions, respond with an array of tag objects. Existing tags have an "id" property, new tags have a "name" and "description" property:
+[{"id": 1}, {"name": "New Tag", "description": "The description of the new tag"}, {"id": 24}]
 
 We'll put more in here later...
 		`.trim(),
@@ -42,14 +45,8 @@ We'll put more in here later...
 				role: 'user',
 				content: {
 					type: 'text',
-					// 🐨 change this to application/json
-					mimeType: 'text/plain',
-					// 🐨 Stringify JSON with the entry, currentTags, and existingTags
-					text: `
-You just created a new journal entry with the id ${entryId}.
-
-Please respond with a proper commendation for yourself.
-					`.trim(),
+					mimeType: 'text/json',
+					text: JSON.stringify({ entry, currentTags, existingTags }),
 				},
 			},
 		],
