@@ -175,6 +175,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 					],
 				}
 			}
+
 			await agent.db.deleteEntry(id)
 
 			const structuredContent = { success: true, entry: existingEntry }
@@ -311,7 +312,6 @@ export async function initializeTools(agent: EpicMeMCP) {
 		async ({ id }) => {
 			const existingTag = await agent.db.getTag(id)
 			invariant(existingTag, `Tag ID "${id}" not found`)
-
 			const confirmed = await elicitConfirmation(
 				agent,
 				`Are you sure you want to delete tag "${existingTag.name}" (ID: ${id})?`,
@@ -410,6 +410,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 		},
 		async (
 			{ year = new Date().getFullYear(), mockTime },
+			// 🐨 you'll need to add signal here for cancellation support
 			{ sendNotification, _meta },
 		) => {
 			const entries = await agent.db.getEntries()
@@ -425,6 +426,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 				tags: filteredTags,
 				year,
 				mockTime,
+				// 🐨 pass the signal here so ffmpeg can be cancelled
 				onProgress: (progress) => {
 					const { progressToken } = _meta ?? {}
 					if (!progressToken) return
@@ -439,6 +441,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 					})
 				},
 			})
+
 			const structuredContent = { videoUri }
 			return {
 				structuredContent,

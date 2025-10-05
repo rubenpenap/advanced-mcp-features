@@ -1,69 +1,73 @@
-# Progress Updates
+# Cancellation
 
-<EpicVideo url="https://www.epicai.pro/workshops/day-3-4-advanced-mcp-features/progress-updates~a3g0l" />
+<EpicVideo url="https://www.epicai.pro/workshops/day-3-4-advanced-mcp-features/cancellation~6o5mm" />
 
-👨‍💼 When users ask our mcp server to generate their journal wrapped video, it can take some time and they want to know that things are moving along. Nobody likes staring at a blank screen, wondering if the app is frozen or if their request was even received. Progress updates are how we keep users in the loop, making the wait feel shorter and the experience more delightful.
+👨‍💼 When users embark on creating their personalized wrapped video, the process can take a while (especially if they journal a lot). Sometimes, halfway through, they realize they picked the wrong year, or maybe their cat walks across the keyboard and they want to stop the operation immediately. It's essential that our app gives users the power to cancel these long-running tasks, so they always feel in control and never stuck waiting for something they no longer want.
 
-Here's an example of how to perform progress updates in your MCP server:
+Let's make sure users can hit the "Stop" button and have their request canceled right away, freeing up system resources and making the experience feel responsive and modern.
+
+<callout-warning>
+	**NOTE**: As of this writing, there is no support for a stop button in the MCP
+	inspector. Follow [this
+	issue](https://github.com/modelcontextprotocol/inspector/issues/591) for
+	updates.
+</callout-warning>
+
+Here's an example of how cancellation can be handled in our MCP server using the `AbortController` and signals:
 
 ```ts
-agent.server.registerTool(
-	'make_sandwich',
-	{
-		description: 'Make a sandwich',
-		inputSchema: {
-			ingredients: z.array(z.string()),
-		},
-	},
-	async ({ ingredients }, { sendNotification, _meta }) => {
-		// ...
-		const orderStatus = await assembleSandwichOrder({
-			ingredients,
-			onProgress: (progress) => {
-				const { progressToken } = _meta ?? {}
-				if (!progressToken) return
-				void sendNotification({
-					method: 'notifications/progress',
-					params: {
-						progressToken,
-						progress,
-						total: 1,
-						message: `Stacking pickles...`,
-					},
-				})
-			},
-		})
-	},
-	// ...
-)
-```
+// the signal comes from the SDK and is passed to our tool
+const controller = new AbortController()
+const signal = controller.signal
 
-<callout-success>
-	Progress updates can be as simple as a percentage, or as fun as a custom
-	message. The key is to keep users informed while they wait.
-</callout-success>
+async function createPlaylistMashup({
+	songs,
+	onProgress,
+	// we pass the signal to our utility so we can add an event listener to it
+	signal,
+}: {
+	songs: string[]
+	onProgress?: (progress: number) => void
+	signal?: AbortSignal
+}) {
+	if (signal?.aborted) throw new Error('Mashup creation was cancelled')
+
+	// our logic...
+	const promise = doTheAsyncThing()
+
+	function onAbort() {
+		// we can do something here, like send a notification to the user
+		// that the mashup was cancelled. This should trigger the async thing to throw an error.
+	}
+	signal.addEventListener('abort', onAbort)
+	await promise.finally(() => {
+		// make sure to clean up regardless of whether the promise resolves or rejects
+		signal.removeEventListener('abort', onAbort)
+	})
+
+	return 'Mashup complete!'
+}
+
+// Somewhere in the SDK, this gets called when the user wants to cancel:
+controller.abort()
+```
 
 ```mermaid
 sequenceDiagram
-  User->>App: Place custom sandwich order (with progressToken)
-  loop While processing
-    App-->>User: notifications/progress (progress, total, message)
-  end
-  App-->>User: Sandwich ready!
+  User->>App: Start playlist mashup (id: 42)
+  Note over User,App: Mashup in progress
+  User-->>App: notifications/cancelled (requestId: 42, reason: "Changed my mind!")
+  App--xUser: (No response for cancelled request)
 ```
 
 <callout-muted>
-	📜 For more details on how to implement progress notifications, see the [MCP
-	Progress
-	Documentation](https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/progress).
+	📜 For more details on how to implement cancellation, see the [MCP
+	Cancellation
+	Documentation](https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/cancellation).
 </callout-muted>
 
-The goal is to make waiting feel like part of the experience, not a chore. Progress updates turn a long-running task into a journey the user can follow, one delicious layer at a time.
+The goal is to empower users to stop long-running operations at any time, making the app feel fast, flexible, and user-friendly—even when things don't go as planned.
 
-Test this one out in the MCP inspector by using the `create_wrapped_video` tool.
+Now, please update our `create_wrapped_video` tool to support cancellation.
 
-<callout-info>
-	**NOTE**: This particular tool requires ffmpeg to be installed globally on
-	your machine. If it is not, you can still test this out using the mock time
-	input (you just won't get the video actually generated).
-</callout-info>
+Because the MCP Inspector does not support cancellation yet, you'll need to rely on the tests to verify your cancellation is working.

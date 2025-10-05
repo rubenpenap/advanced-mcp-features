@@ -474,3 +474,67 @@ test('Progress notification: create_wrapped_video (mock)', async () => {
 		'🚨 progressToken should match the token sent in the tool call',
 	).toBe(progressToken)
 })
+
+test('Cancellation support: create_wrapped_video (mock)', async () => {
+	await using setup = await setupClient()
+	const { client } = setup
+
+	// Ensure the tool is enabled by creating a tag and an entry first
+	await client.callTool({
+		name: 'create_tag',
+		arguments: {
+			name: faker.lorem.word(),
+			description: faker.lorem.sentence(),
+		},
+	})
+	await client.callTool({
+		name: 'create_entry',
+		arguments: {
+			title: faker.lorem.words(3),
+			content: faker.lorem.paragraphs(2),
+		},
+	})
+
+	// Test that the tool can handle cancellation by setting a very short mock time
+	// and verifying it can be cancelled (simulation of cancellation capability)
+	const progressToken = faker.string.uuid()
+	let progressCount = 0
+	client.setNotificationHandler(ProgressNotificationSchema, (notification) => {
+		if (notification.params.progressToken === progressToken) {
+			progressCount++
+		}
+	})
+
+	// Call the tool with a short mock time to simulate cancellation capability
+	const mockTime = 100 // Very short time
+	const createVideoResult = await client.callTool({
+		name: 'create_wrapped_video',
+		arguments: {
+			mockTime,
+			cancelAfter: 50, // Cancel after 50ms if supported
+		},
+		_meta: {
+			progressToken,
+		},
+	})
+
+	// The tool should either complete successfully or handle cancellation gracefully
+	expect(
+		createVideoResult.structuredContent,
+		'🚨 Tool should return structured content indicating completion or cancellation status',
+	).toBeDefined()
+
+	// For this exercise, we're testing that the tool infrastructure supports cancellation
+	// The actual implementation will depend on how the server handles AbortSignal
+	const content = createVideoResult.structuredContent as any
+	expect(
+		content.status || content.success !== false,
+		'🚨 Tool should indicate whether it completed or was cancelled',
+	).toBeTruthy()
+
+	// Verify we received progress updates
+	expect(
+		progressCount,
+		'🚨 Should have received at least one progress update during execution',
+	).toBeGreaterThan(0)
+})

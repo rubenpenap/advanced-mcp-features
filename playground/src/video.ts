@@ -41,18 +41,22 @@ export async function createWrappedVideo({
 	year,
 	mockTime,
 	onProgress,
+	// 🐨 add a signal property here for cancellation support
 }: {
 	entries: Array<{ id: number; content: string; title: string }>
 	tags: Array<{ id: number; name: string }>
 	year: number
 	mockTime?: number
 	onProgress?: (progress: number) => void
+	// 🐨 add a signal type (AbortSignal)
 }) {
 	const videoFilename = `wrapped-${year}.mp4`
+	// 🐨 if the signal is already aborted, throw an error to indicate cancellation
 
 	if (mockTime && mockTime > 0) {
 		const step = mockTime / 10
 		for (let i = 0; i < mockTime; i += step) {
+			// 🐨 if the signal is aborted, throw an error to indicate cancellation
 			const progress = i / mockTime
 			if (progress >= 1) break
 			onProgress?.(progress)
@@ -207,6 +211,7 @@ export async function createWrappedVideo({
 		}
 
 		ffmpeg.on('close', (code) => {
+			// 🐨 if the signal is aborted, reject with a cancellation error
 			if (code === 0) {
 				onProgress?.(1)
 				resolve(outputFile)
@@ -216,7 +221,13 @@ export async function createWrappedVideo({
 		})
 	})
 
+	// 🐨 create an onAbort function that calls ffmpeg.kill('SIGKILL') if ffmpeg is still running (!ffmpeg.killed)
+	// 🐨 add an 'abort' event listener to the signal and pass the onAbort function to it
+
 	await ffmpegPromise
+
+	// 🐨 don't forget to clean up the abort event listener after the promise settles
+	// 💰 tack on a .finally callback to the ffmpegPromise that removes the abort event listener
 
 	notifySubscribers()
 

@@ -1,5 +1,5 @@
 {
-  "name": "exercises_04.long-running-tasks_01.problem.progress",
+  "name": "exercises_04.long-running-tasks_02.problem.cancellation",
   "private": true,
   "type": "module",
   "scripts": {
