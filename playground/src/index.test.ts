@@ -9,6 +9,7 @@ import {
 	type CreateMessageResult,
 	ElicitRequestSchema,
 	ProgressNotificationSchema,
+	PromptListChangedNotificationSchema,
 } from '@modelcontextprotocol/sdk/types.js'
 import { test, expect } from 'vitest'
 import { type z } from 'zod'
@@ -537,4 +538,51 @@ test('Cancellation support: create_wrapped_video (mock)', async () => {
 		progressCount,
 		'🚨 Should have received at least one progress update during execution',
 	).toBeGreaterThan(0)
+})
+
+test('ListChanged notification: prompts', async () => {
+	await using setup = await setupClient()
+	const { client } = setup
+
+	const promptListChanged = await deferred<any>()
+	client.setNotificationHandler(
+		PromptListChangedNotificationSchema,
+		(notification) => {
+			promptListChanged.resolve(notification)
+		},
+	)
+
+	// Trigger a DB change that should enable prompts
+	await client.callTool({
+		name: 'create_tag',
+		arguments: {
+			name: faker.lorem.word(),
+			description: faker.lorem.sentence(),
+		},
+	})
+	await client.callTool({
+		name: 'create_entry',
+		arguments: {
+			title: faker.lorem.words(3),
+			content: faker.lorem.paragraphs(2),
+		},
+	})
+
+	let promptNotif
+	try {
+		promptNotif = await Promise.race([
+			promptListChanged.promise,
+			new Promise((_, reject) =>
+				setTimeout(() => reject(new Error('timeout')), 2000),
+			),
+		])
+	} catch {
+		throw new Error(
+			'🚨 Did not receive prompts/listChanged notification when expected. Make sure your server calls sendPromptListChanged when prompts are enabled/disabled.',
+		)
+	}
+	expect(
+		promptNotif,
+		'🚨 Did not receive prompts/listChanged notification when expected. Make sure your server calls sendPromptListChanged when prompts are enabled/disabled.',
+	).toBeDefined()
 })

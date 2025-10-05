@@ -410,8 +410,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 		},
 		async (
 			{ year = new Date().getFullYear(), mockTime },
-			// 🐨 you'll need to add signal here for cancellation support
-			{ sendNotification, _meta },
+			{ sendNotification, _meta, signal },
 		) => {
 			const entries = await agent.db.getEntries()
 			const filteredEntries = entries.filter(
@@ -426,7 +425,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 				tags: filteredTags,
 				year,
 				mockTime,
-				// 🐨 pass the signal here so ffmpeg can be cancelled
+				signal,
 				onProgress: (progress) => {
 					const { progressToken } = _meta ?? {}
 					if (!progressToken) return

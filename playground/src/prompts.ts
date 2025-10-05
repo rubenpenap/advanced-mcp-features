@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { type EpicMeMCP } from './index.ts'
 
 export async function initializePrompts(agent: EpicMeMCP) {
+	// 🐨 assign the returned prompt object to a variable called suggestTagsPrompt
 	agent.server.registerPrompt(
 		'suggest_tags',
 		{
@@ -73,4 +74,13 @@ For each tag I approve, if it does not yet exist, create it with the EpicMe "cre
 			}
 		},
 	)
+
+	// 🐨 Create a function called `updatePrompts` that:
+	//    - gets the all the entries (💰 `agent.db.getEntries()`)
+	//    - If there are any entries:
+	//        - If the `suggestTagsPrompt` is not enabled, enable it
+	//    - Otherwise (no entries):
+	//        - If the `suggestTagsPrompt` is enabled, disable it
+	// 🐨 Subscribe `updatePrompts` to changes in the database (💰 `agent.db.subscribe(updatePrompts)`)
+	// 🐨 Call `updatePrompts()` once immediately (await it)
 }
