@@ -3,8 +3,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { DB } from './db/index.ts'
 import { initializePrompts } from './prompts.ts'
 import { initializeResources } from './resources.ts'
-// 💰 you'll need this:
-// import { initializeSubscriptions } from './subscriptions.ts'
+import { initializeSubscriptions } from './subscriptions.ts'
 import { initializeTools } from './tools.ts'
 
 export class EpicMeMCP {
@@ -18,8 +17,7 @@ export class EpicMeMCP {
 		{
 			capabilities: {
 				tools: { listChanged: true },
-				// 🐨 add the `subscribe` capability to the `resources` capability
-				resources: { listChanged: true },
+				resources: { listChanged: true, subscribe: true },
 				completions: {},
 				logging: {},
 				prompts: { listChanged: true },
@@ -41,8 +39,7 @@ You can also help users add tags to their entries and get all tags for an entry.
 		await initializeTools(this)
 		await initializeResources(this)
 		await initializePrompts(this)
-		// 💰 you'll need this:
-		// await initializeSubscriptions(this)
+		await initializeSubscriptions(this)
 	}
 }
 
