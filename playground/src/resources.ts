@@ -4,16 +4,12 @@ import { type EpicMeMCP } from './index.ts'
 import {
 	getVideoBase64,
 	listVideos,
-	// 💰 you'll need this:
-	// subscribe as subscribeToVideoChanges,
+	subscribe as subscribeToVideoChanges,
 } from './video.ts'
 
 export async function initializeResources(agent: EpicMeMCP) {
-	// 🐨 add a subscription to the database (💰 with agent.db.subscribe) that
-	// passes a callback which calls agent.server.sendResourceListChanged.
-
-	// 🐨 add a subscription to the videos (💰 with subscribeToVideoChanges) that
-	// passes a callback which calls agent.server.sendResourceListChanged.
+	agent.db.subscribe(() => agent.server.sendResourceListChanged())
+	subscribeToVideoChanges(() => agent.server.sendResourceListChanged())
 
 	const tagListResource = agent.server.registerResource(
 		'tags',
