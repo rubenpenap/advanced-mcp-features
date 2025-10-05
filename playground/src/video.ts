@@ -40,13 +40,13 @@ export async function createWrappedVideo({
 	tags,
 	year,
 	mockTime,
-	// 🐨 add an onProgress callback here
+	onProgress,
 }: {
 	entries: Array<{ id: number; content: string; title: string }>
 	tags: Array<{ id: number; name: string }>
 	year: number
 	mockTime?: number
-	// 🐨 add an onProgress callback type here
+	onProgress?: (progress: number) => void
 }) {
 	const videoFilename = `wrapped-${year}.mp4`
 
@@ -55,10 +55,10 @@ export async function createWrappedVideo({
 		for (let i = 0; i < mockTime; i += step) {
 			const progress = i / mockTime
 			if (progress >= 1) break
-			// 🐨 call the onProgress callback here with the current progress
+			onProgress?.(progress)
 			await new Promise((resolve) => setTimeout(resolve, step))
 		}
-		// 🐨 call the onProgress callback here with 1 (complete)
+		onProgress?.(1)
 		return `epicme://videos/${videoFilename}`
 	}
 
@@ -194,23 +194,21 @@ export async function createWrappedVideo({
 				const str = data.toString()
 				const timeMatch = str.match(/time=(\d{2}):(\d{2}):(\d{2})\.(\d{2})/)
 				if (timeMatch) {
-					// 💰 here's how you calculate the progress
-					// const hours = Number(timeMatch[1])
-					// const minutes = Number(timeMatch[2])
-					// const seconds = Number(timeMatch[3])
-					// const fraction = Number(timeMatch[4])
-					// const currentSeconds =
-					// 	hours * 3600 + minutes * 60 + seconds + fraction / 100
-					// const progress = Math.min(currentSeconds / totalDurationSeconds, 1)
-					//
-					// 🐨 call the onProgress callback here with the current progress
+					const hours = Number(timeMatch[1])
+					const minutes = Number(timeMatch[2])
+					const seconds = Number(timeMatch[3])
+					const fraction = Number(timeMatch[4])
+					const currentSeconds =
+						hours * 3600 + minutes * 60 + seconds + fraction / 100
+					const progress = Math.min(currentSeconds / totalDurationSeconds, 1)
+					onProgress?.(progress)
 				}
 			})
 		}
 
 		ffmpeg.on('close', (code) => {
 			if (code === 0) {
-				// 🐨 call the onProgress callback here with 1 (complete)
+				onProgress?.(1)
 				resolve(outputFile)
 			} else {
 				reject(new Error(`ffmpeg exited with code ${code}`))
