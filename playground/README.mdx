@@ -1,41 +1,57 @@
-# Resource Template List Changed
+# Subscriptions
 
-<EpicVideo url="https://www.epicai.pro/workshops/day-3-4-advanced-mcp-features/resource-template-list-changed~lkds0" />
+<EpicVideo url="https://www.epicai.pro/workshops/day-3-4-advanced-mcp-features/subscriptions~hja2q" />
 
-👨‍💼 When people use our EpicMe journaling app, they expect the list of available resources (like journal entries, tags, or even videos) to always reflect what's actually possible right now. Imagine a user just added a new video reflection or created a fresh tag for their latest entry. They want to see those options appear instantly, without needing to refresh or wonder if something is out of sync.
+👨‍💼 When people use our EpicMe journaling MCP, they want the LLM they're using to always have the latest version of their journaling data. Exposing subscriptions for resources (like a particular entry, tag, or video) allows clients to be notified of changes to specific resources the LLM is using in its context or the client may be using for other purposes.
 
-That's why it's so important for our MCP server to notify the client whenever the set of available resources changes, especially when those resources are managed by templates that can expand or contract as the underlying data changes. This keeps the UI feeling alive and responsive, so users always see the right options for their current context, whether they're a first-time journaler or a seasoned reflection pro.
+To make this possible, our MCP server needs to support **resource subscriptions**. This means clients can subscribe to updates for specific resources, and the server will notify them when those resources change.
 
-Let's look at an example of how this is done:
+The key to enabling this with the MCP SDK is the `setRequestHandler` method. This lets the server listen for subscription requests from clients and track which URIs they're interested in. When something changes, the server can send a notification to just those clients.
 
-```ts lines=16
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
+Here's an example:
 
-const server = new McpServer(
-	{ name: 'DuckCollector', version: '1.0.0' },
-	{
-		capabilities: {
-			resources: { listChanged: true },
-			// ...other capabilities
-		},
+```ts
+import {
+	SubscribeRequestSchema,
+	UnsubscribeRequestSchema,
+} from '@modelcontextprotocol/sdk/types.js'
+
+const petSubscriptions = new Set<string>()
+
+// NOTE: the server.server is how the MCP SDK exposes the underlying server
+// instance for more advanced APIs like this one.
+
+// Allow clients to subscribe to updates for a specific pet
+server.server.setRequestHandler(SubscribeRequestSchema, async ({ params }) => {
+	petSubscriptions.add(params.uri)
+	return {} // no specific response data is needed
+})
+
+// Allow clients to unsubscribe from updates
+server.server.setRequestHandler(
+	UnsubscribeRequestSchema,
+	async ({ params }) => {
+		petSubscriptions.delete(params.uri)
+		return {} // no specific response data is needed
 	},
 )
 
-// Whenever the ducky or tag list changes, notify the client
-function updateResourceTemplates() {
-	// ...logic to check for changes...
-	server.sendResourceListChanged()
+// When a pet's status changes, notify subscribed clients
+function onPetStatusChange(petId: string, newStatus: string) {
+	const uri = `pethotel://pets/${petId}`
+	if (petSubscriptions.has(uri)) {
+		server.server.notification({
+			method: 'notifications/resources/updated',
+			params: { uri, title: `Pet ${petId} status updated to ${newStatus}` },
+		})
+	}
 }
 ```
 
-<callout-success>
-	The MCP SDK makes it easy to keep resource lists in sync. Just call
-	`sendResourceListChanged()` whenever your templates expand (items are added),
-	contract (items are removed), or change metadata.
-</callout-success>
+👨‍💼 In our journaling MCP, you'll want to use a similar pattern to let clients subscribe to updates for entries, tags, and videos. When any of these resources change, notify the right clients so their UI stays perfectly in sync.
 
-To make this work in our app, you'll want to subscribe to changes in your database and any other dynamic sources (like video uploads). When something changes, call `sendResourceListChanged()` so the client can refresh its resource lists and show users the latest and greatest.
+📜 For more details on `setRequestHandler` and subscriptions, see the [official MCP Server Spec: Resources](https://modelcontextprotocol.io/specification/2025-06-18/server/resources).
 
-📜 For more details, see the [Server Spec: Resources](https://modelcontextprotocol.io/specification/2025-06-18/server/resources).
+The goal is to make real-time updates feel effortless and automatic for users, so they can focus on their journaling—not on hitting the refresh button.
 
-The goal is to make resource management feel effortless and immediate for users, so they can focus on their journaling adventures—not on refreshing the page.
+The MCP Inspector supports subscriptions, but [does not currently automatically refresh the UI when a resource changes](https://github.com/modelcontextprotocol/inspector/issues/596). So you'll want to rely on the tests for this one.

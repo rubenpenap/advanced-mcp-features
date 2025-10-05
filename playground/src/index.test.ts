@@ -11,6 +11,7 @@ import {
 	ProgressNotificationSchema,
 	PromptListChangedNotificationSchema,
 	ResourceListChangedNotificationSchema,
+	ResourceUpdatedNotificationSchema,
 	ToolListChangedNotificationSchema,
 } from '@modelcontextprotocol/sdk/types.js'
 import { test, expect } from 'vitest'
@@ -601,13 +602,6 @@ test('ListChanged notification: resources', async () => {
 		},
 	)
 
-	// Initially resources should be disabled/empty
-	const initialResources = await client.listResources()
-	expect(
-		initialResources.resources,
-		'🚨 Resources should initially be empty when no entries/tags exist',
-	).toHaveLength(0)
-
 	// Trigger a DB change that should enable resources
 	await client.callTool({
 		name: 'create_tag',
@@ -624,7 +618,6 @@ test('ListChanged notification: resources', async () => {
 		},
 	})
 
-	// Should receive resource listChanged notification
 	let resourceNotif
 	try {
 		resourceNotif = await Promise.race([
@@ -635,31 +628,13 @@ test('ListChanged notification: resources', async () => {
 		])
 	} catch {
 		throw new Error(
-			'🚨 Did not receive resources/listChanged notification when expected. Make sure your server calls sendResourceListChanged when resources are enabled/disabled.',
+			'🚨 Did not receive resources/listChanged notification when expected. Make sure your server calls sendResourceListChanged when resources change.',
 		)
 	}
 	expect(
 		resourceNotif,
-		'🚨 Did not receive resources/listChanged notification when expected. Make sure your server calls sendResourceListChanged when resources are enabled/disabled.',
+		'🚨 Did not receive resources/listChanged notification when expected. Make sure your server calls sendResourceListChanged when resources change.',
 	).toBeDefined()
-
-	// After notification, resources should now be available
-	const enabledResources = await client.listResources()
-	expect(
-		enabledResources.resources.length,
-		'🚨 Resources should be enabled after creating entries/tags. The server must dynamically enable/disable resources based on content.',
-	).toBeGreaterThan(0)
-
-	// Verify that resources are properly available
-	const resourceUris = enabledResources.resources.map((r) => r.uri)
-	expect(
-		resourceUris.some((uri) => uri.includes('entries')),
-		'🚨 Should have entry resources available after creating entries',
-	).toBe(true)
-	expect(
-		resourceUris.some((uri) => uri.includes('tags')),
-		'🚨 Should have tag resources available after creating tags',
-	).toBe(true)
 })
 
 test('ListChanged notification: tools', async () => {
@@ -674,17 +649,7 @@ test('ListChanged notification: tools', async () => {
 		},
 	)
 
-	// Get initial tool list
-	const initialTools = await client.listTools()
-	const initialToolNames = initialTools.tools.map((t) => t.name)
-
-	// Should not have tools requiring exisitng entries
-	expect(
-		initialToolNames,
-		'🚨 Tools requiring entries like get_entry should not be available initially',
-	).not.toContain('get_entry')
-
-	// Trigger a DB change that should enable additional tools
+	// Trigger a DB change that should enable tools
 	await client.callTool({
 		name: 'create_tag',
 		arguments: {
@@ -700,7 +665,6 @@ test('ListChanged notification: tools', async () => {
 		},
 	})
 
-	// Should receive tool listChanged notification
 	let toolNotif
 	try {
 		toolNotif = await Promise.race([
@@ -718,18 +682,102 @@ test('ListChanged notification: tools', async () => {
 		toolNotif,
 		'🚨 Did not receive tools/listChanged notification when expected. Make sure your server notifies clients when tools are enabled/disabled.',
 	).toBeDefined()
+})
 
-	// After notification, additional tools should be available
-	const enabledTools = await client.listTools()
-	const enabledToolNames = enabledTools.tools.map((t) => t.name)
-	expect(
-		enabledToolNames,
-		'🚨 Tools requiring entries like get_entry should be enabled after creating entries/tags. The server must dynamically enable/disable tools based on content.',
-	).toContain('get_entry')
+test('Resource subscriptions: entry and tag', async () => {
+	await using setup = await setupClient()
+	const { client } = setup
 
-	// Verify that tools are properly enabled with correct count
+	const tagNotification = await deferred<any>()
+	const entryNotification = await deferred<any>()
+	const notifications: any[] = []
+	let tagUri: string, entryUri: string
+	const handler = (notification: any) => {
+		notifications.push(notification)
+		if (notification.params.uri === tagUri) {
+			tagNotification.resolve(notification)
+		}
+		if (notification.params.uri === entryUri) {
+			entryNotification.resolve(notification)
+		}
+	}
+	client.setNotificationHandler(ResourceUpdatedNotificationSchema, handler)
+
+	// Create a tag and entry to get their URIs
+	const tagResult = await client.callTool({
+		name: 'create_tag',
+		arguments: {
+			name: faker.lorem.word(),
+			description: faker.lorem.sentence(),
+		},
+	})
+	const tag = (tagResult.structuredContent as any).tag
+	tagUri = `epicme://tags/${tag.id}`
+
+	const entryResult = await client.callTool({
+		name: 'create_entry',
+		arguments: {
+			title: faker.lorem.words(3),
+			content: faker.lorem.paragraphs(2),
+		},
+	})
+	const entry = (entryResult.structuredContent as any).entry
+	entryUri = `epicme://entries/${entry.id}`
+
+	// Subscribe to both resources
+	await client.subscribeResource({ uri: tagUri })
+	await client.subscribeResource({ uri: entryUri })
+
+	// Trigger updates
+	const updateTagResult = await client.callTool({
+		name: 'update_tag',
+		arguments: { id: tag.id, name: tag.name + '-updated' },
+	})
+	invariant(
+		updateTagResult.structuredContent,
+		`🚨 Tag update failed: ${JSON.stringify(updateTagResult)}`,
+	)
+
+	const updateEntryResult = await client.callTool({
+		name: 'update_entry',
+		arguments: { id: entry.id, title: entry.title + ' updated' },
+	})
+	invariant(
+		updateEntryResult.structuredContent,
+		`🚨 Entry update failed: ${JSON.stringify(updateEntryResult)}`,
+	)
+
+	// Wait for notifications to be received (deferred)
+	const [tagNotif, entryNotif] = await Promise.all([
+		tagNotification.promise,
+		entryNotification.promise,
+	])
+
 	expect(
-		enabledTools.tools.length,
-		'🚨 Should have more tools available after creating content',
-	).toBeGreaterThan(initialTools.tools.length)
+		tagNotif.params.uri,
+		'🚨 Tag notification uri should be the tag URI',
+	).toBe(tagUri)
+	expect(
+		entryNotif.params.uri,
+		'🚨 Entry notification uri should be the entry URI',
+	).toBe(entryUri)
+
+	// Unsubscribe and trigger another update
+	notifications.length = 0
+	await client.unsubscribeResource({ uri: tagUri })
+	await client.unsubscribeResource({ uri: entryUri })
+	await client.callTool({
+		name: 'update_tag',
+		arguments: { id: tag.id, name: tag.name + '-again' },
+	})
+	await client.callTool({
+		name: 'update_entry',
+		arguments: { id: entry.id, title: entry.title + ' again' },
+	})
+	// Wait a short time to ensure no notifications are received
+	await new Promise((r) => setTimeout(r, 200))
+	expect(
+		notifications,
+		'🚨 No notifications should be received after unsubscribing',
+	).toHaveLength(0)
 })
