@@ -15,8 +15,8 @@ export class EpicMeMCP {
 		},
 		{
 			capabilities: {
-				tools: {},
-				resources: {},
+				tools: { listChanged: true },
+				resources: { listChanged: true },
 				completions: {},
 				logging: {},
 				prompts: { listChanged: true },

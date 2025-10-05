@@ -58,7 +58,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 		},
 	)
 
-	agent.server.registerTool(
+	const getEntryTool = agent.server.registerTool(
 		'get_entry',
 		{
 			title: 'Get Entry',
@@ -84,7 +84,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 		},
 	)
 
-	agent.server.registerTool(
+	const listEntriesTool = agent.server.registerTool(
 		'list_entries',
 		{
 			title: 'List Entries',
@@ -110,7 +110,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 		},
 	)
 
-	agent.server.registerTool(
+	const updateEntryTool = agent.server.registerTool(
 		'update_entry',
 		{
 			title: 'Update Entry',
@@ -142,7 +142,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 		},
 	)
 
-	agent.server.registerTool(
+	const deleteEntryTool = agent.server.registerTool(
 		'delete_entry',
 		{
 			title: 'Delete Entry',
@@ -220,7 +220,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 		},
 	)
 
-	agent.server.registerTool(
+	const getTagTool = agent.server.registerTool(
 		'get_tag',
 		{
 			title: 'Get Tag',
@@ -243,7 +243,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 		},
 	)
 
-	agent.server.registerTool(
+	const listTagsTool = agent.server.registerTool(
 		'list_tags',
 		{
 			title: 'List Tags',
@@ -269,7 +269,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 		},
 	)
 
-	agent.server.registerTool(
+	const updateTagTool = agent.server.registerTool(
 		'update_tag',
 		{
 			title: 'Update Tag',
@@ -298,7 +298,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 		},
 	)
 
-	agent.server.registerTool(
+	const deleteTagTool = agent.server.registerTool(
 		'delete_tag',
 		{
 			title: 'Delete Tag',
@@ -316,6 +316,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 				agent,
 				`Are you sure you want to delete tag "${existingTag.name}" (ID: ${id})?`,
 			)
+
 			if (!confirmed) {
 				const structuredContent = { success: false, tag: existingTag }
 				return {
@@ -345,7 +346,7 @@ export async function initializeTools(agent: EpicMeMCP) {
 		},
 	)
 
-	agent.server.registerTool(
+	const addTagToEntryTool = agent.server.registerTool(
 		'add_tag_to_entry',
 		{
 			title: 'Add Tag to Entry',
@@ -458,6 +459,42 @@ export async function initializeTools(agent: EpicMeMCP) {
 			}
 		},
 	)
+
+	async function updateTools() {
+		const entries = await agent.db.getEntries()
+		if (entries.length > 0) {
+			if (!deleteEntryTool.enabled) deleteEntryTool.enable()
+			if (!updateEntryTool.enabled) updateEntryTool.enable()
+			if (!listEntriesTool.enabled) listEntriesTool.enable()
+			if (!getEntryTool.enabled) getEntryTool.enable()
+		} else {
+			if (deleteEntryTool.enabled) deleteEntryTool.disable()
+			if (updateEntryTool.enabled) updateEntryTool.disable()
+			if (listEntriesTool.enabled) listEntriesTool.disable()
+			if (getEntryTool.enabled) getEntryTool.disable()
+		}
+
+		const tags = await agent.db.getTags()
+		if (tags.length > 0) {
+			if (!deleteTagTool.enabled) deleteTagTool.enable()
+			if (!updateTagTool.enabled) updateTagTool.enable()
+			if (!listTagsTool.enabled) listTagsTool.enable()
+			if (!getTagTool.enabled) getTagTool.enable()
+		} else {
+			if (deleteTagTool.enabled) deleteTagTool.disable()
+			if (updateTagTool.enabled) updateTagTool.disable()
+			if (listTagsTool.enabled) listTagsTool.disable()
+			if (getTagTool.enabled) getTagTool.disable()
+		}
+
+		if (entries.length > 0 && tags.length > 0) {
+			if (!addTagToEntryTool.enabled) addTagToEntryTool.enable()
+		} else {
+			if (addTagToEntryTool.enabled) addTagToEntryTool.disable()
+		}
+	}
+	agent.db.subscribe(updateTools)
+	await updateTools()
 }
 
 type ToolAnnotations = {

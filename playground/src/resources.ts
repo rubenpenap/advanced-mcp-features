@@ -1,10 +1,21 @@
 import { invariant } from '@epic-web/invariant'
 import { ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { type EpicMeMCP } from './index.ts'
-import { getVideoBase64, listVideos } from './video.ts'
+import {
+	getVideoBase64,
+	listVideos,
+	// 💰 you'll need this:
+	// subscribe as subscribeToVideoChanges,
+} from './video.ts'
 
 export async function initializeResources(agent: EpicMeMCP) {
-	agent.server.registerResource(
+	// 🐨 add a subscription to the database (💰 with agent.db.subscribe) that
+	// passes a callback which calls agent.server.sendResourceListChanged.
+
+	// 🐨 add a subscription to the videos (💰 with subscribeToVideoChanges) that
+	// passes a callback which calls agent.server.sendResourceListChanged.
+
+	const tagListResource = agent.server.registerResource(
 		'tags',
 		'epicme://tags',
 		{
@@ -25,7 +36,7 @@ export async function initializeResources(agent: EpicMeMCP) {
 		},
 	)
 
-	agent.server.registerResource(
+	const tagsResource = agent.server.registerResource(
 		'tag',
 		new ResourceTemplate('epicme://tags/{id}', {
 			complete: {
@@ -66,7 +77,7 @@ export async function initializeResources(agent: EpicMeMCP) {
 		},
 	)
 
-	agent.server.registerResource(
+	const entryResource = agent.server.registerResource(
 		'entry',
 		new ResourceTemplate('epicme://entries/{id}', {
 			list: undefined,
@@ -98,7 +109,7 @@ export async function initializeResources(agent: EpicMeMCP) {
 		},
 	)
 
-	agent.server.registerResource(
+	const videoResource = agent.server.registerResource(
 		'video',
 		new ResourceTemplate('epicme://videos/{videoId}', {
 			complete: {
@@ -138,4 +149,33 @@ export async function initializeResources(agent: EpicMeMCP) {
 			}
 		},
 	)
+
+	async function updateResources() {
+		const entries = await agent.db.getEntries()
+		const tags = await agent.db.getTags()
+		const videos = await listVideos()
+
+		if (tags.length > 0) {
+			if (!tagListResource.enabled) tagListResource.enable()
+			if (!tagsResource.enabled) tagsResource.enable()
+		} else {
+			if (tagListResource.enabled) tagListResource.disable()
+			if (tagsResource.enabled) tagsResource.disable()
+		}
+
+		if (entries.length > 0) {
+			if (!entryResource.enabled) entryResource.enable()
+		} else {
+			if (entryResource.enabled) entryResource.disable()
+		}
+
+		if (videos.length > 0) {
+			if (!videoResource.enabled) videoResource.enable()
+		} else {
+			if (videoResource.enabled) videoResource.disable()
+		}
+	}
+
+	agent.db.subscribe(updateResources)
+	await updateResources()
 }
